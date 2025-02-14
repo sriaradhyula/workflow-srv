@@ -125,27 +125,20 @@ learn, inspire, and create. Any contributions you make are **greatly
 appreciated**. For detailed contributing guidelines, please see
 [CONTRIBUTING.md](CONTRIBUTING.md)
 
-### Top contributors
+## Copyright Notice
 
-<a href="https://github.com/agntcy/repo-template/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=agntcy/repo-template" alt="contrib.rocks image" />
-</a>
+[Copyright Notice and License](LICENSE.md)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+Copyright (c) 2025 Cisco and/or its affiliates.
 
-## License
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Distributed under the `<License name>` License. See [LICENSE](LICENSE) for more
-information.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-## Contact
-
-Your Name - [@github_handle](https://github.com/github_handle) - email
-
-Project Link:
-[https://github.com/org_name/repo_name](https://github.com/org_name/repo_name)
-
-## Acknowledgements
-
-This template was adapted from
-[https://github.com/othneildrew/Best-README-Template](https://github.com/othneildrew/Best-README-Template).
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
