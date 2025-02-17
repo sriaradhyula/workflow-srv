@@ -8,7 +8,6 @@ The Agent Workflow Server project provides a workflow engine that allows users t
 
 ## Getting Started
 
-
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to
