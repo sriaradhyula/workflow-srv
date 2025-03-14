@@ -1,0 +1,3 @@
+[submodule "acp-spec"]
+	path = acp-spec
+	url = https://github.com/agntcy/acp-spec.git
