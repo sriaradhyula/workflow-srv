@@ -3,10 +3,10 @@
 [![Release](https://img.shields.io/github/v/release/agntcy/workflow-srv?display_name=tag)](CHANGELOG.md)
 [![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
 
-The Agent Workflow Server (AgWS) enables participation in the IoA. It accommodates agents from diverse frameworks and exposes them through ACP, regardless of their underlying implementation.
+The Agent Workflow Server (AgWS) enables participation in the Internet of Agents [(IoA)](https://docs.agntcy.org/). It accommodates AI Agents from diverse frameworks and exposes them through Agent Connect Protocol [(ACP)](https://github.com/agntcy/acp-spec), regardless of their underlying implementation.
 
 > [!NOTE]
-> If you wish to use the Agent Workflow Server to run your Agent, please check out the user-facing [Agent Workflow Server Manager](https://github.com/cisco-eti/agent-workflow-cli) instead.
+> If you wish to quickly deploy and run your Agent, please check out the user-facing [Workflow Server Manager](https://github.com/agntcy/workflow-srv-mgr) instead.
 
 ## Getting Started
 
