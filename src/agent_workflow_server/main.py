@@ -1,0 +1,81 @@
+from fastapi import Depends, FastAPI
+
+import sys
+import signal
+import uvicorn
+import os
+import asyncio
+import logging
+
+
+import uvicorn.logging
+from agent_workflow_server.apis.agents import router as AgentsApiRouter
+from agent_workflow_server.apis.runs import router as RunsApiRouter
+
+from agent_workflow_server.agents.load import register_from_env
+from agent_workflow_server.auth.auth import auth_middleware, setup_api_key_auth
+from agent_workflow_server.logger.custom_logger import CustomLoggerHandler
+from agent_workflow_server.services.queue import start_workers
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8000
+
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[CustomLoggerHandler],
+    force=True
+)
+
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="Agent Workflow Server",
+    version="0.1",
+)
+
+setup_api_key_auth(app)
+
+app.include_router(
+    router=AgentsApiRouter,
+    dependencies=[Depends(auth_middleware)],
+)
+app.include_router(
+    router=RunsApiRouter,
+    dependencies=[Depends(auth_middleware)],
+)
+
+
+def signal_handler(sig, frame):
+    logger.warning(f"Received {signal.Signals(sig).name}. Exiting...")
+    sys.exit(0)
+
+
+def start():
+    try:
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        register_from_env()
+        n_workers = int(os.environ.get('NUM_WORKERS', 5))
+
+        loop = asyncio.get_event_loop()
+        loop.create_task(start_workers(n_workers))
+
+        config = uvicorn.Config(
+            app,
+            host=os.getenv('API_HOST', DEFAULT_HOST) or DEFAULT_HOST,
+            port=int(os.getenv('API_PORT', DEFAULT_PORT)) or DEFAULT_PORT, loop="asyncio"
+        )
+        server = uvicorn.Server(config)
+        loop.run_until_complete(server.serve())
+    except SystemExit as e:
+        logger.warning(f"Agent Workflow Server exited with code: {e}")
+    except Exception as e:
+        logger.error(f"Exiting due to an unexpected error: {e}")
+
+
+if __name__ == "__main__":
+    start()
