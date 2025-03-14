@@ -1,2 +1,3 @@
 - [Getting Started](README.md)
 - [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
