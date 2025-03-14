@@ -10,7 +10,7 @@ The Agent Workflow Server (AgWS) enables participation in the IoA. It accommodat
 
 ## Getting Started
 
-See [Agent Workflow Server Documentation](https://agntcy.github.io/workflow-srv)
+See [Agent Workflow Server Documentation](https://agntcy.github.io/workflow-srv/)
 
 ## Contributing
 
