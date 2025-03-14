@@ -30,9 +30,10 @@ Generated code (API routes template and modes) is under `src/agent_workflow_serv
 
 ### Authentication
 
-API Key authentication is optional:
-- Set `API_KEY` environment variable to enable authentication
-- Include the key in requests via `x-api-key` header
+The Agent Workflow Server, and the underlying Agent, could be optionally authenticated via a pre-defined API Key:
+
+- Set `API_KEY` environment variable with a pre-defined value to enable authentication
+- Include the same value in requests from clients via `x-api-key` header
 
 ### OpenAPI Documentation
 
