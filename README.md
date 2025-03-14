@@ -1,8 +1,7 @@
 # Agent Workflow Server
 
-- [Documentation](https://agntcy.github.io/workflow-srv)
-
-## About The Project
+[![Release](https://img.shields.io/github/v/release/agntcy/workflow-srv?display_name=tag)](CHANGELOG.md)
+[![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
 
 The Agent Workflow Server (AgWS) enables participation in the IoA. It accommodates agents from diverse frameworks and exposes them through ACP, regardless of their underlying implementation.
 
@@ -11,44 +10,14 @@ The Agent Workflow Server (AgWS) enables participation in the IoA. It accommodat
 
 ## Getting Started
 
-1) Copy example env file and adapt if necessary: `cp .env.example .env`
-
-1) Create a virtual environment and install the server dependencies: `poetry install`
-
-    > **NOTE**: make sure to have poetry version 2+
-
-1) Install an agent
-    > e.g.: `pip install examples/agents/mailcomposer`
-
-1) Start the server: `poetry run server`
-
-### Generating API
-
-1) If it's the first time you're cloning this repo, initialize submodule: `git submodule update --init --recursive`
-
-1) Run `make generate-api`
-
-Generated code (API routes template and modes) is under `src/agent_workflow_server/generated`. 
-
-- If needed, API routes template could be manually copied and implemented under `src/agent_workflow_server/apis`
-- Models should not be copied over different places nor modified, but referenced as they are
-
-### Authentication
-
-API Key authentication is optional:
-- Set `API_KEY` environment variable to enable authentication
-- Include the key in requests via `x-api-key` header
-
-### OpenAPI Documentation
-
-Once the Agent Workflow Server is running, interactive API docs are available under `/docs` endpoint, redoc documentation under `/redoc` endpoint
+See [Agent Workflow Server Documentation](https://agntcy.github.io/workflow-srv)
 
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to
 learn, inspire, and create. Any contributions you make are **greatly
 appreciated**. For detailed contributing guidelines, please see
-[CONTRIBUTING.md](CONTRIBUTING.md)
+[CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ## Copyright Notice
 
