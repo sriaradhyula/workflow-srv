@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Cisco and/or its affiliates.
+# SPDX-License-Identifier: Apache-2.0
+
+---
+name: ci-docker-build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "main"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  docker-build:
+    name: Build wfsrv docker image
+    uses: ./.github/workflows/reusable-docker-build-push.yaml
+    with:
+      bake-target: workflowserver
+      image-name: wfsrv
+      image-tag: ${{ github.sha }}
