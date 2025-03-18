@@ -47,4 +47,4 @@ run:
 	poetry run server
 
 docker-build-dev: ## Build the docker image.
-	docker buildx bake workflowserver-dev
+	docker buildx bake workflowserver-dev --load

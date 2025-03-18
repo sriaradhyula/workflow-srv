@@ -43,7 +43,6 @@ target "workflowserver-dev" {
   tags = [
     "workflowserver:latest",
     ]
-  output = ["type=docker"]
 }
 
 target "workflowserver" {
