@@ -20,25 +20,24 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
-from agent_workflow_server.generated.models.run_status import RunStatus
+from agent_workflow_server.generated.models.message import Message
+from agent_workflow_server.generated.models.thread_checkpoint import ThreadCheckpoint
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class RunSearchRequest(BaseModel):
+class ThreadPatch(BaseModel):
     """
-    Payload for listing runs.
+    Payload for updating a thread.
     """ # noqa: E501
-    agent_id: Optional[StrictStr] = Field(default=None, description="Matches all the Runs associated with the specified Agent ID.")
-    status: Optional[RunStatus] = Field(default=None, description="Matches all the Runs associated with the specified status. One of 'pending', 'error', 'success', 'timeout', 'interrupted'.")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Matches all threads for which metadata has  keys and values equal to those specified in this object.")
-    limit: Optional[Annotated[int, Field(le=1000, strict=True, ge=1)]] = Field(default=10, description="Maximum number to return.")
-    offset: Optional[Annotated[int, Field(strict=True, ge=0)]] = Field(default=0, description="Offset to start from.")
-    __properties: ClassVar[List[str]] = ["agent_id", "status", "metadata", "limit", "offset"]
+    checkpoint: Optional[ThreadCheckpoint] = Field(default=None, description="The identifier of the checkpoint to branch from. Ignored for metadata-only patches. If not provided, defaults to the latest checkpoint.")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Metadata to merge with existing thread metadata.")
+    values: Optional[Dict[str, Any]] = Field(default=None, description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
+    messages: Optional[List[Message]] = Field(default=None, description="The current Messages of the thread. If messages are contained in Thread.values, implementations should remove them from values when returning messages. When this key isn't present it means the thread/agent doesn't support messages.")
+    __properties: ClassVar[List[str]] = ["checkpoint", "metadata", "values", "messages"]
 
     model_config = {
         "populate_by_name": True,
@@ -58,7 +57,7 @@ class RunSearchRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of RunSearchRequest from a JSON string"""
+        """Create an instance of ThreadPatch from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,11 +76,21 @@ class RunSearchRequest(BaseModel):
             },
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of checkpoint
+        if self.checkpoint:
+            _dict['checkpoint'] = self.checkpoint.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in messages (list)
+        _items = []
+        if self.messages:
+            for _item in self.messages:
+                if _item:
+                    _items.append(_item.to_dict())
+            _dict['messages'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of RunSearchRequest from a dict"""
+        """Create an instance of ThreadPatch from a dict"""
         if obj is None:
             return None
 
@@ -89,11 +98,10 @@ class RunSearchRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "agent_id": obj.get("agent_id"),
-            "status": obj.get("status"),
+            "checkpoint": ThreadCheckpoint.from_dict(obj.get("checkpoint")) if obj.get("checkpoint") is not None else None,
             "metadata": obj.get("metadata"),
-            "limit": obj.get("limit") if obj.get("limit") is not None else 10,
-            "offset": obj.get("offset") if obj.get("offset") is not None else 0
+            "values": obj.get("values"),
+            "messages": [Message.from_dict(_item) for _item in obj.get("messages")] if obj.get("messages") is not None else None
         })
         return _obj
 

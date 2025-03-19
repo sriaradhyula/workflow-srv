@@ -26,23 +26,22 @@ except ImportError:
     from typing_extensions import Self
 
 
-class RunStatus(str, Enum):
+class ThreadStatus(str, Enum):
     """
-    RunStatus
+    ThreadStatus
     """
 
     """
     allowed enum values
     """
-    PENDING = 'pending'
-    ERROR = 'error'
-    SUCCESS = 'success'
-    TIMEOUT = 'timeout'
+    IDLE = 'idle'
+    BUSY = 'busy'
     INTERRUPTED = 'interrupted'
+    ERROR = 'error'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of RunStatus from a JSON string"""
+        """Create an instance of ThreadStatus from a JSON string"""
         return cls(json.loads(json_str))
 
 

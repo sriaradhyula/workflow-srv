@@ -1,5 +1,5 @@
 # Variables
-SPEC_FILE := acp-spec/openapi.yaml
+SPEC_FILE := acp-spec/openapi.json
 OUTPUT_DIR := src/agent_workflow_server/generated
 OUTPUT_DIR_TMP := src/agent_workflow_server/tmp
 

@@ -20,29 +20,22 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
-from agent_workflow_server.generated.models.stream_event_payload import StreamEventPayload
+from pydantic import ConfigDict, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from agent_workflow_server.generated.models.object import object
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class RunOutputStream(BaseModel):
+class MessageAnyBlock(object):
     """
-    Server-sent event containing one agent output event. Actual event type is carried inside the data.
+    MessageAnyBlock
     """ # noqa: E501
-    id: StrictStr = Field(description="Unique identifier of the event")
-    event: StrictStr = Field(description="Event type. This is the constant string `agent_event` to be compatible with SSE spec. The actual type differentiation is done in the event itself.")
-    data: StreamEventPayload
-    __properties: ClassVar[List[str]] = ["id", "event", "data"]
-
-    @field_validator('event')
-    def event_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in ('agent_event',):
-            raise ValueError("must be one of enum values ('agent_event')")
-        return value
+    type: StrictStr
+    metadata: Optional[Dict[str, Any]] = None
+    additional_properties: Dict[str, Any] = {}
+    __properties: ClassVar[List[str]] = ["type", "metadata"]
 
     model_config = {
         "populate_by_name": True,
@@ -62,7 +55,7 @@ class RunOutputStream(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of RunOutputStream from a JSON string"""
+        """Create an instance of MessageAnyBlock from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,21 +67,25 @@ class RunOutputStream(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         _dict = self.model_dump(
             by_alias=True,
             exclude={
+                "additional_properties",
             },
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of RunOutputStream from a dict"""
+        """Create an instance of MessageAnyBlock from a dict"""
         if obj is None:
             return None
 
@@ -96,10 +93,14 @@ class RunOutputStream(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "event": obj.get("event"),
-            "data": StreamEventPayload.from_dict(obj.get("data")) if obj.get("data") is not None else None
+            "type": obj.get("type"),
+            "metadata": obj.get("metadata")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from agent_workflow_server.generated.models.config import Config
@@ -30,9 +30,9 @@ try:
 except ImportError:
     from typing_extensions import Self
 
-class RunCreate(BaseModel):
+class RunCreateStateful(BaseModel):
     """
-    Payload for creating a run.
+    Payload for creating a stateful run.
     """ # noqa: E501
     agent_id: Optional[StrictStr] = Field(default=None, description="The agent ID to run. If not provided will use the default agent for this service.")
     input: Optional[Dict[str, Any]] = Field(default=None, description="The input to the agent. The schema is described in agent ACP descriptor under 'spec.thread_state'.'input'.")
@@ -43,7 +43,9 @@ class RunCreate(BaseModel):
     on_disconnect: Optional[StrictStr] = Field(default='cancel', description="The disconnect mode to use. Must be one of 'cancel' or 'continue'.")
     multitask_strategy: Optional[StrictStr] = Field(default='reject', description="Multitask strategy to use. Must be one of 'reject', 'interrupt', 'rollback', or 'enqueue'.")
     after_seconds: Optional[StrictInt] = Field(default=None, description="The number of seconds to wait before starting the run. Use to schedule future runs.")
-    __properties: ClassVar[List[str]] = ["agent_id", "input", "metadata", "config", "webhook", "stream_mode", "on_disconnect", "multitask_strategy", "after_seconds"]
+    stream_subgraphs: Optional[StrictBool] = Field(default=False, description="Whether to stream output from subgraphs.")
+    if_not_exists: Optional[StrictStr] = Field(default='reject', description="How to handle missing thread. Must be either 'reject' (raise error if missing), or 'create' (create new thread).")
+    __properties: ClassVar[List[str]] = ["agent_id", "input", "metadata", "config", "webhook", "stream_mode", "on_disconnect", "multitask_strategy", "after_seconds", "stream_subgraphs", "if_not_exists"]
 
     @field_validator('on_disconnect')
     def on_disconnect_validate_enum(cls, value):
@@ -65,6 +67,16 @@ class RunCreate(BaseModel):
             raise ValueError("must be one of enum values ('reject', 'rollback', 'interrupt', 'enqueue')")
         return value
 
+    @field_validator('if_not_exists')
+    def if_not_exists_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in ('create', 'reject',):
+            raise ValueError("must be one of enum values ('create', 'reject')")
+        return value
+
     model_config = {
         "populate_by_name": True,
         "validate_assignment": True,
@@ -83,7 +95,7 @@ class RunCreate(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of RunCreate from a JSON string"""
+        """Create an instance of RunCreateStateful from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -112,7 +124,7 @@ class RunCreate(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of RunCreate from a dict"""
+        """Create an instance of RunCreateStateful from a dict"""
         if obj is None:
             return None
 
@@ -128,7 +140,9 @@ class RunCreate(BaseModel):
             "stream_mode": StreamMode.from_dict(obj.get("stream_mode")) if obj.get("stream_mode") is not None else None,
             "on_disconnect": obj.get("on_disconnect") if obj.get("on_disconnect") is not None else 'cancel',
             "multitask_strategy": obj.get("multitask_strategy") if obj.get("multitask_strategy") is not None else 'reject',
-            "after_seconds": obj.get("after_seconds")
+            "after_seconds": obj.get("after_seconds"),
+            "stream_subgraphs": obj.get("stream_subgraphs") if obj.get("stream_subgraphs") is not None else False,
+            "if_not_exists": obj.get("if_not_exists") if obj.get("if_not_exists") is not None else 'reject'
         })
         return _obj
 
