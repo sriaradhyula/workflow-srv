@@ -6,7 +6,13 @@ from pytest_mock import MockerFixture
 from agent_workflow_server.agents.load import load_agents
 from agent_workflow_server.services.queue import start_workers
 from agent_workflow_server.services.runs import ApiRunCreate, Runs
-from tests.mock import MOCK_AGENTS_REF, MOCK_RUN_INPUT, MOCK_RUN_OUTPUT, MockAdapter
+from tests.mock import (
+    MOCK_AGENTS_REF_ENV,
+    MOCK_MANIFEST_ENV,
+    MOCK_RUN_INPUT,
+    MOCK_RUN_OUTPUT,
+    MockAdapter,
+)
 
 run_create_mock = ApiRunCreate(agent_id="1", input=MOCK_RUN_INPUT, config={})
 
@@ -14,7 +20,8 @@ run_create_mock = ApiRunCreate(agent_id="1", input=MOCK_RUN_INPUT, config={})
 @pytest.mark.asyncio
 async def test_invoke(mocker: MockerFixture):
     mocker.patch.dict("os.environ", {"AGWS_STORAGE_PERSIST": "False"})
-    mocker.patch.dict("os.environ", MOCK_AGENTS_REF)
+    mocker.patch.dict("os.environ", MOCK_AGENTS_REF_ENV)
+    mocker.patch.dict("os.environ", MOCK_MANIFEST_ENV)
     mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
 
     try:
@@ -48,7 +55,8 @@ async def test_invoke(mocker: MockerFixture):
 @pytest.mark.parametrize("timeout", [0.5, 1, 1.0, 2.51293])
 async def test_invoke_timeout(mocker: MockerFixture, timeout: float):
     mocker.patch.dict("os.environ", {"AGWS_STORAGE_PERSIST": "False"})
-    mocker.patch.dict("os.environ", MOCK_AGENTS_REF)
+    mocker.patch.dict("os.environ", MOCK_AGENTS_REF_ENV)
+    mocker.patch.dict("os.environ", MOCK_MANIFEST_ENV)
     mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
 
     try:

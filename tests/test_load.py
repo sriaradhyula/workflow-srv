@@ -1,11 +1,12 @@
 from pytest_mock import MockerFixture
 
 from agent_workflow_server.agents.load import AGENTS, load_agents
-from tests.mock import MOCK_AGENTS_REF, MockAdapter, MockAgent
+from tests.mock import MOCK_AGENTS_REF_ENV, MOCK_MANIFEST_ENV, MockAdapter, MockAgent
 
 
 def test_load_agents(mocker: MockerFixture):
-    mocker.patch.dict("os.environ", MOCK_AGENTS_REF)
+    mocker.patch.dict("os.environ", MOCK_AGENTS_REF_ENV)
+    mocker.patch.dict("os.environ", MOCK_MANIFEST_ENV)
     mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
 
     load_agents()
