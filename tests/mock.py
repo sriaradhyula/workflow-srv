@@ -1,12 +1,14 @@
-from agent_workflow_server.agents.base import BaseAgent, BaseAdapter
 import asyncio
 
-MOCK_AGENTS_REF = {'AGENTS_REF': '{"mock_agent": "tests.mock:mock_agent"}'}
+from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
+
+MOCK_AGENTS_REF = {"AGENTS_REF": '{"mock_agent": "tests.mock:mock_agent"}'}
 MOCK_RUN_INPUT = {"message": "What's the color of the sky?"}
 MOCK_RUN_OUTPUT = "The color of the sky is blue"
 
-class MockAgentImpl():
-    ...
+
+class MockAgentImpl: ...
+
 
 class MockAgent(BaseAgent):
     def __init__(self, agent: MockAgentImpl):
@@ -15,6 +17,7 @@ class MockAgent(BaseAgent):
     async def astream(self, input: dict, config: dict):
         await asyncio.sleep(3)
         yield MOCK_RUN_OUTPUT
+
 
 class MockAdapter(BaseAdapter):
     def load_agent(self, agent: object):

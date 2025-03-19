@@ -31,6 +31,16 @@ pytest-mock = "^3.14.0"
 ruff = "^0.11.0"
 pytest-asyncio = "^0.25.3"
 
+[tool.ruff]
+lint.select = [ "E", "F", "I", "TID251"]
+lint.ignore = [ "E501" ]
+indent-width = 4
+exclude = ["src/agent_workflow_server/generated/*"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Optional, Any
+from typing import Any, AsyncGenerator, Optional
 
 
 class BaseAgent(ABC):

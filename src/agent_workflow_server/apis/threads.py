@@ -8,16 +8,15 @@ from fastapi import (
     HTTPException,
     Path,
 )
-
 from pydantic import Field, StrictStr
-from typing import List
 from typing_extensions import Annotated
+
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.thread import Thread
 from agent_workflow_server.generated.models.thread_create import ThreadCreate
-from agent_workflow_server.generated.models.thread_search_request import ThreadSearchRequest
-
-
+from agent_workflow_server.generated.models.thread_search_request import (
+    ThreadSearchRequest,
+)
 
 router = APIRouter()
 
@@ -54,8 +53,9 @@ async def create_thread(
     response_model_by_alias=True,
 )
 async def delete_thread(
-    thread_id: Annotated[StrictStr, Field(
-        description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
+        ..., description="The ID of the thread."
+    ),
 ) -> Thread:
     """Delete a thread."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -74,8 +74,9 @@ async def delete_thread(
     response_model_by_alias=True,
 )
 async def get_run_threadstate(
-    run_id: Annotated[StrictStr, Field(
-        description="The ID of the run.")] = Path(..., description="The ID of the run."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
+        ..., description="The ID of the run."
+    ),
 ) -> object:
     """This call can be used only for agents that support thread, i.e. for Runs that specify a thread ID. It can be called only on runs that are in &#x60;success&#x60; status. It returns the thread state at the end of the Run. Can be used to reconstruct the evolution of the thread state in its history."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -94,10 +95,11 @@ async def get_run_threadstate(
     response_model_by_alias=True,
 )
 async def get_thread(
-    thread_id: Annotated[StrictStr, Field(
-        description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
+        ..., description="The ID of the thread."
+    ),
 ) -> Thread:
-    """Get a thread from its ID. """
+    """Get a thread from its ID."""
     raise HTTPException(status_code=500, detail="Not implemented")
 
 
@@ -114,8 +116,9 @@ async def get_thread(
     response_model_by_alias=True,
 )
 async def get_thread_history(
-    thread_id: Annotated[StrictStr, Field(
-        description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
+        ..., description="The ID of the thread."
+    ),
 ) -> List[Run]:
     """Retrieve ordered list of runs for this thread in chronological order."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -134,8 +137,9 @@ async def get_thread_history(
     response_model_by_alias=True,
 )
 async def get_thread_state(
-    thread_id: Annotated[StrictStr, Field(
-        description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
+        ..., description="The ID of the thread."
+    ),
 ) -> object:
     """Retrieve the the current state associated with the thread"""
     raise HTTPException(status_code=500, detail="Not implemented")

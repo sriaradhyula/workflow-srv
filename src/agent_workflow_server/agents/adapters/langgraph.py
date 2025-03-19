@@ -1,7 +1,8 @@
 from typing import Optional
+
 from langgraph.graph.graph import CompiledGraph, Graph
 
-from agent_workflow_server.agents.base import BaseAgent, BaseAdapter
+from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 
 
 class LangGraphAdapter(BaseAdapter):
@@ -18,5 +19,7 @@ class LangGraphAgent(BaseAgent):
         self.agent = agent
 
     async def astream(self, input: dict, config: dict):
-        async for event in self.agent.astream(input=input, config=config, stream_mode="values"):
+        async for event in self.agent.astream(
+            input=input, config=config, stream_mode="values"
+        ):
             yield event

@@ -1,13 +1,16 @@
 import asyncio
-from datetime import datetime, timedelta
-from uuid import uuid4
-from typing import Any, Dict, List, Optional, AsyncGenerator, NamedTuple
-from collections import defaultdict
-
 import logging
+from collections import defaultdict
+from datetime import datetime
+from typing import AsyncGenerator, Dict, List, Optional
+from uuid import uuid4
 
-from agent_workflow_server.generated.models.run import RunCreate as ApiRunCreate, Run as ApiRun
-
+from agent_workflow_server.generated.models.run import (
+    Run as ApiRun,
+)
+from agent_workflow_server.generated.models.run import (
+    RunCreate as ApiRunCreate,
+)
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
@@ -16,6 +19,7 @@ from .message import Message
 logger = logging.getLogger(__name__)
 
 condition = asyncio.Condition()
+
 
 def _make_run(run_create: ApiRunCreate) -> Run:
     """
@@ -39,7 +43,7 @@ def _make_run(run_create: ApiRunCreate) -> Run:
         "metadata": run_create.metadata if run_create.metadata else {},
         "created_at": curr_time,
         "updated_at": curr_time,
-        "status": "pending"
+        "status": "pending",
     }
 
 
@@ -55,19 +59,19 @@ def _to_api_model(run: Run) -> ApiRun:
     """
     return ApiRun(
         creation=ApiRunCreate(
-            agent_id=run['agent_id'],
-            thread_id=run['thread_id'],
-            input=run['input'],
-            metadata=run['metadata'],
-            config=run['config'],
-            webhook=None  # TODO
+            agent_id=run["agent_id"],
+            thread_id=run["thread_id"],
+            input=run["input"],
+            metadata=run["metadata"],
+            config=run["config"],
+            webhook=None,  # TODO
         ),
-        run_id=run['run_id'],
-        agent_id=run['agent_id'],
-        thread_id=run['thread_id'],
-        created_at=run['created_at'],
-        updated_at=run['updated_at'],
-        status=run["status"]
+        run_id=run["run_id"],
+        agent_id=run["agent_id"],
+        thread_id=run["thread_id"],
+        created_at=run["created_at"],
+        updated_at=run["updated_at"],
+        status=run["status"],
     )
 
 
@@ -105,13 +109,13 @@ class Runs:
     async def put(run_create: ApiRunCreate) -> ApiRun:
         new_run = _make_run(run_create)
         run_info = RunInfo(
-            run_id=new_run['run_id'],
+            run_id=new_run["run_id"],
             attempts=0,
         )
         DB.create_run(new_run)
         DB.create_run_info(run_info)
 
-        await RUNS_QUEUE.put(new_run['run_id'])
+        await RUNS_QUEUE.put(new_run["run_id"])
         return _to_api_model(new_run)
 
     @staticmethod
@@ -160,7 +164,7 @@ class Runs:
         if run is None:
             return None, None
 
-        if run['status'] != "pending":
+        if run["status"] != "pending":
             # If the run is already completed, return the stored output immediately
             return _to_api_model(run), DB.get_run_output(run_id)
 
@@ -169,8 +173,9 @@ class Runs:
             async with cvs_pending_run[run_id]:
                 await asyncio.wait_for(
                     cvs_pending_run[run_id].wait_for(
-                        lambda: DB.get_run_status(run_id) != "pending"),
-                    timeout=timeout
+                        lambda: DB.get_run_status(run_id) != "pending"
+                    ),
+                    timeout=timeout,
                 )
                 status = DB.get_run_status(run_id)
                 run = DB.get_run(run_id)

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -11,18 +11,19 @@ from fastapi import (
     Response,
     status,
 )
-
 from pydantic import Field, StrictStr
-from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
+
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create import RunCreate
-from agent_workflow_server.generated.models.run_output import RunOutput, RunResult, RunError
+from agent_workflow_server.generated.models.run_output import (
+    RunError,
+    RunOutput,
+    RunResult,
+)
 from agent_workflow_server.generated.models.run_output_stream import RunOutputStream
 from agent_workflow_server.generated.models.run_search_request import RunSearchRequest
-
 from agent_workflow_server.services.runs import Runs
-
 
 router = APIRouter()
 
@@ -59,8 +60,9 @@ async def create_run(
     response_model_by_alias=True,
 )
 async def delete_run(
-    run_id: Annotated[StrictStr, Field(
-        description="The ID of the agent.")] = Path(..., description="The ID of the agent."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(
+        ..., description="The ID of the agent."
+    ),
 ) -> Run:
     """Cancel a run."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -79,15 +81,16 @@ async def delete_run(
     response_model_by_alias=True,
 )
 async def get_run(
-    run_id: Annotated[StrictStr, Field(
-        description="The ID of the agent.")] = Path(..., description="The ID of the agent."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(
+        ..., description="The ID of the agent."
+    ),
 ) -> Run:
     """Get a run from its ID. Don&#39;t wait for the final run output."""
     run = Runs.get(run_id)
     if run is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Run with ID {run_id} not found"
+            detail=f"Run with ID {run_id} not found",
         )
     return run
 
@@ -106,7 +109,9 @@ async def get_run(
     response_model_by_alias=True,
 )
 async def get_run_output(
-    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
+        ..., description="The ID of the run."
+    ),
     block_timeout: Optional[int] = Query(None, description="", alias="block_timeout"),
 ) -> RunOutput:
     """Retrieve the last output of the run.  The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   If the block timeout is provided and the current run status is &#x60;pending&#x60;, this call blocks until the state changes or the timeout expires.  If no timeout is provided or the timeout has expired and  run status is &#x60;pending&#x60;, this call returns &#x60;204&#x60; with no content."""
@@ -117,25 +122,24 @@ async def get_run_output(
     if run is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     if run.status == "success" and run_output is not None:
-        return RunOutput(RunResult(
-            type='result',
-            run_id=run_id,
-            status=run.status,
-            result=run_output
-        ))
+        return RunOutput(
+            RunResult(
+                type="result", run_id=run_id, status=run.status, result=run_output
+            )
+        )
     else:
-        return RunOutput(RunError(
-            type='error',
-            run_id=run_id,
-            errcode=1,
-            description=run_output
-        ))
+        return RunOutput(
+            RunError(type="error", run_id=run_id, errcode=1, description=run_output)
+        )
 
 
 @router.get(
     "/runs/{run_id}/stream",
     responses={
-        200: {"model": RunOutputStream, "description": "Stream of agent results either as &#x60;RunResult&#x60; objects or custom objects, according to the specific streaming mode requested. Note that the stream of events is carried using the format specified in SSE spec &#x60;text/event-stream&#x60;"},
+        200: {
+            "model": RunOutputStream,
+            "description": "Stream of agent results either as &#x60;RunResult&#x60; objects or custom objects, according to the specific streaming mode requested. Note that the stream of events is carried using the format specified in SSE spec &#x60;text/event-stream&#x60;",
+        },
         204: {"description": "No Output Available"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
@@ -146,8 +150,9 @@ async def get_run_output(
     response_model_by_alias=True,
 )
 async def get_run_stream(
-    run_id: Annotated[StrictStr, Field(
-        description="The ID of the run.")] = Path(..., description="The ID of the run."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
+        ..., description="The ID of the run."
+    ),
 ) -> RunOutputStream:
     """Send a stream of events using Server-sent events (SEE). See &lt;https://html.spec.whatwg.org/multipage/server-sent-events.html&gt; for details."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -166,8 +171,9 @@ async def get_run_stream(
     response_model_by_alias=True,
 )
 async def resume_run(
-    run_id: Annotated[StrictStr, Field(
-        description="The ID of the agent.")] = Path(..., description="The ID of the agent."),
+    run_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(
+        ..., description="The ID of the agent."
+    ),
     body: Dict[str, Any] = Body(None, description=""),
 ) -> Run:
     """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""

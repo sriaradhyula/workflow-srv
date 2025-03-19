@@ -8,16 +8,17 @@ from fastapi import (  # noqa: F401
     HTTPException,
     Path,
 )
-
 from pydantic import Field, StrictStr
-from typing import List
 from typing_extensions import Annotated
-from agent_workflow_server.generated.models.agent import Agent
-from agent_workflow_server.generated.models.agent_acp_descriptor import AgentACPDescriptor
-from agent_workflow_server.generated.models.agent_search_request import AgentSearchRequest
 
 from agent_workflow_server.agents.load import get_agent_info
-
+from agent_workflow_server.generated.models.agent import Agent
+from agent_workflow_server.generated.models.agent_acp_descriptor import (
+    AgentACPDescriptor,
+)
+from agent_workflow_server.generated.models.agent_search_request import (
+    AgentSearchRequest,
+)
 
 router = APIRouter()
 
@@ -34,7 +35,9 @@ router = APIRouter()
     response_model_by_alias=True,
 )
 async def get_acp_descriptor_by_id(
-    agent_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(..., description="The ID of the agent."),
+    agent_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(
+        ..., description="The ID of the agent."
+    ),
 ) -> AgentACPDescriptor:
     """Get agent ACP descriptor by agent ID."""
 
@@ -55,7 +58,9 @@ async def get_acp_descriptor_by_id(
     response_model_by_alias=True,
 )
 async def get_agent_by_id(
-    agent_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(..., description="The ID of the agent."),
+    agent_id: Annotated[StrictStr, Field(description="The ID of the agent.")] = Path(
+        ..., description="The ID of the agent."
+    ),
 ) -> Agent:
     """Get an agent by ID."""
     raise HTTPException(status_code=500, detail="Not implemented")
