@@ -16,6 +16,8 @@ class AgentInfo(NamedTuple):
     manifest: AgentACPDescriptor
 
 
+
+
 def _load_adapters() -> List[BaseAdapter]:
     adapters = []
     package = agent_workflow_server.agents.adapters
@@ -43,7 +45,7 @@ def _read_manifest(path: str) -> AgentACPDescriptor:
     if os.path.isfile(path):
         with open(path, 'r') as file:
             manifest_data = json.load(file)
-            # print full path 
+            # print full path
             logger.info(f'Loaded Agent Manifest from {os.path.abspath(path)}')
         return AgentACPDescriptor(**manifest_data)
 
@@ -108,7 +110,7 @@ Check that the module name and export symbol in 'AGENTS_REF' env variable are co
     return AgentInfo(agent=agent, manifest=manifest)
 
 
-def register_from_env():
+def load_agents():
     # Simulate loading the config from environment variable
 
     try:

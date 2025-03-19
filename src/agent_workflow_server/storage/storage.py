@@ -25,22 +25,21 @@ load_dotenv()
 class InMemoryDB(DBOperations):
     """In-memory database with file persistence"""
 
-    def __init__(self, storage_file: str = None):
-        storage_file = (
-            os.getenv("AGWS_STORAGE_PATH")  # Try to get from environment
-            or storage_file  # Then try the parameter
-            or "agws_storage.pkl"  # Finally fall back to default
-        )
-
+    def __init__(self):
         self._runs: Dict[str, Run] = {}
         self._runs_info: Dict[str, RunInfo] = {}
         self._runs_output: Dict[str, Any] = {}
 
-        self.storage_file = storage_file
-        self._load_from_file()
-        # Register save on exit
-        logger.debug("Registering database save handler on exit")
-        atexit.register(self._save_to_file)
+        use_fs_storage = os.getenv("AGWS_STORAGE_PERSIST") == "True"
+        if use_fs_storage:
+            storage_file = (os.getenv("AGWS_STORAGE_PATH")
+                            or "agws_storage.pkl")
+            self.storage_file = storage_file
+            self._load_from_file()
+            # Register save on exit
+            logger.debug("Registering database save handler on exit")
+            atexit.register(self._save_to_file)
+
         super().__init__(self._runs, self._runs_info, self._runs_output)
         logger.debug("InMemoryDB initialization complete")
 

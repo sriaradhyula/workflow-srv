@@ -116,11 +116,11 @@ async def get_run_output(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     if run is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
-    if run["status"] == "success" and run_output is not None:
+    if run.status == "success" and run_output is not None:
         return RunOutput(RunResult(
             type='result',
             run_id=run_id,
-            status=run["status"],
+            status=run.status,
             result=run_output
         ))
     else:

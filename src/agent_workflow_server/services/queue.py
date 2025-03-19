@@ -26,7 +26,12 @@ class AttemptsExceededError(Exception):
 async def start_workers(n_workers: int):
     logger.info(f"Starting {n_workers} workers")
     tasks = [asyncio.create_task(worker(i+1)) for i in range(n_workers)]
-    await asyncio.gather(*tasks)
+    try:
+        await asyncio.gather(*tasks)
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def log_run(worker_id: int, run_id: str, info: Literal["started", "succeeded", "failed", "exeeded attempts"], **kwargs):

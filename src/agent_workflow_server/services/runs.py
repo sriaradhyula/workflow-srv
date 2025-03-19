@@ -162,7 +162,7 @@ class Runs:
 
         if run['status'] != "pending":
             # If the run is already completed, return the stored output immediately
-            return run, DB.get_run_output(run_id)
+            return _to_api_model(run), DB.get_run_output(run_id)
 
         # TODO: handle removing cvs when run is completed and there are no more subscribers
         try:
@@ -175,9 +175,9 @@ class Runs:
                 status = DB.get_run_status(run_id)
                 run = DB.get_run(run_id)
                 if status == "success":
-                    return run, DB.get_run_output(run_id)
+                    return _to_api_model(run), DB.get_run_output(run_id)
                 else:
-                    return run, None
+                    return _to_api_model(run), None
         except asyncio.TimeoutError:
             logger.warning(f"Timeout reached while waiting for run {run_id}")
             raise TimeoutError

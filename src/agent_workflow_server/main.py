@@ -12,7 +12,7 @@ import uvicorn.logging
 from agent_workflow_server.apis.agents import router as AgentsApiRouter
 from agent_workflow_server.apis.runs import router as RunsApiRouter
 
-from agent_workflow_server.agents.load import register_from_env
+from agent_workflow_server.agents.load import load_agents
 from agent_workflow_server.auth.auth import auth_middleware, setup_api_key_auth
 from agent_workflow_server.logger.custom_logger import CustomLoggerHandler
 from agent_workflow_server.services.queue import start_workers
@@ -58,7 +58,7 @@ def start():
     try:
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
-        register_from_env()
+        load_agents()
         n_workers = int(os.environ.get('NUM_WORKERS', 5))
 
         loop = asyncio.get_event_loop()
