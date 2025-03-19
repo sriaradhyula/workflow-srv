@@ -2,7 +2,8 @@ import asyncio
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 
-MOCK_AGENTS_REF = {"AGENTS_REF": '{"mock_agent": "tests.mock:mock_agent"}'}
+MOCK_AGENTS_REF_ENV = {"AGENTS_REF": '{"mock_agent": "tests.mock:mock_agent"}'}
+MOCK_MANIFEST_ENV = {"AGENT_MANIFEST_PATH": "tests/mock_manifest.json"}
 MOCK_RUN_INPUT = {"message": "What's the color of the sky?"}
 MOCK_RUN_OUTPUT = "The color of the sky is blue"
 

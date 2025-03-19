@@ -1,0 +1,52 @@
+{
+    "metadata": {
+        "ref": {
+            "name": "org.agntcy.mock_agent",
+            "version": "0.0.1"
+        },
+        "description": "A Mock Agent"
+    },
+    "specs": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "output": {
+            "type": "string"
+        },
+        "config": {
+            "type": "object",
+            "description": "The configuration of the agent",
+            "properties": {
+                "test": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "capabilities": {
+            "threads": false,
+            "interrupts": false,
+            "callbacks": false
+        },
+        "interrupts": []
+    },
+    "dependencies": [],
+    "deployment": {
+        "dependencies": [],
+        "deployment_options": [
+            {
+                "type": "source_code",
+                "name": "src",
+                "url": "some_url.git",
+                "framework_config": {
+                    "framework_type": "a_framework",
+                    "mock_agent": "tests.mock:mock_agent"
+                }
+            }
+        ]
+    }
+}
