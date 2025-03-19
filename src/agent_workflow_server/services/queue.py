@@ -1,40 +1,48 @@
 import asyncio
 import logging
-from typing import Literal
 from datetime import datetime
+from typing import Literal
 
-from agent_workflow_server.storage.storage import DB
 from agent_workflow_server.storage.models import RunInfo
+from agent_workflow_server.storage.storage import DB
 
-from .runs import Runs, RUNS_QUEUE
-from .stream import stream_run
 from .message import Message
+from .runs import RUNS_QUEUE, Runs
+from .stream import stream_run
 
 MAX_RETRY_ATTEMPTS = 3
 
 logger = logging.getLogger(__name__)
 
 
-class RunError(Exception):
-    ...
+class RunError(Exception): ...
 
 
-class AttemptsExceededError(Exception):
-    ...
+class AttemptsExceededError(Exception): ...
 
 
 async def start_workers(n_workers: int):
     logger.info(f"Starting {n_workers} workers")
-    tasks = [asyncio.create_task(worker(i+1)) for i in range(n_workers)]
-    await asyncio.gather(*tasks)
+    tasks = [asyncio.create_task(worker(i + 1)) for i in range(n_workers)]
+    try:
+        await asyncio.gather(*tasks)
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
-def log_run(worker_id: int, run_id: str, info: Literal["started", "succeeded", "failed", "exeeded attempts"], **kwargs):
+def log_run(
+    worker_id: int,
+    run_id: str,
+    info: Literal["started", "succeeded", "failed", "exeeded attempts"],
+    **kwargs,
+):
     log_methods = {
         "started": logger.info,
         "succeeded": logger.info,
         "failed": logger.warning,
-        "exeeded attempts": logger.error
+        "exeeded attempts": logger.error,
     }
     log_message = f"(Worker {worker_id}) Background Run {run_id} {info}"
     if kwargs:
@@ -45,7 +53,7 @@ def log_run(worker_id: int, run_id: str, info: Literal["started", "succeeded", "
 
 
 def run_stats(run_info: RunInfo):
-    return {key: run_info[key] for key in ['exec_s', 'queue_s', 'attempts']}
+    return {key: run_info[key] for key in ["exec_s", "queue_s", "attempts"]}
 
 
 async def worker(worker_id: int):
@@ -56,15 +64,15 @@ async def worker(worker_id: int):
 
         started_at = datetime.now().timestamp()
 
-        await Runs.set_status(run['run_id'], "pending")
+        await Runs.set_status(run["run_id"], "pending")
 
-        run_info['attempts'] += 1
-        run_info['started_at'] = started_at
-        run_info['exec_s'] = 0
+        run_info["attempts"] += 1
+        run_info["started_at"] = started_at
+        run_info["exec_s"] = 0
         DB.update_run_info(run_id, run_info)
 
         try:
-            if run_info['attempts'] > MAX_RETRY_ATTEMPTS:
+            if run_info["attempts"] > MAX_RETRY_ATTEMPTS:
                 raise AttemptsExceededError()
 
             log_run(worker_id, run_id, "started")
@@ -77,14 +85,16 @@ async def worker(worker_id: int):
                     await Runs.Stream.publish(run_id, message)
                     last_message = message
             except Exception as error:
-                await Runs.Stream.publish(run_id, Message(topic="error", data=(str(error))))
+                await Runs.Stream.publish(
+                    run_id, Message(topic="error", data=(str(error)))
+                )
                 raise RunError(str(error))
 
             ended_at = datetime.now().timestamp()
 
-            run_info['ended_at'] = ended_at
-            run_info['exec_s'] = (ended_at - started_at)
-            run_info['queue_s'] = (started_at - run['created_at'].timestamp())
+            run_info["ended_at"] = ended_at
+            run_info["exec_s"] = ended_at - started_at
+            run_info["queue_s"] = started_at - run["created_at"].timestamp()
 
             DB.update_run_info(run_id, run_info)
             DB.add_run_output(run_id, last_message.data)
@@ -92,12 +102,15 @@ async def worker(worker_id: int):
             await Runs.set_status(run_id, "success")
             log_run(worker_id, run_id, "succeeded", **run_stats(run_info))
 
-        except AttemptsExceededError as error:
+        except AttemptsExceededError:
             ended_at = datetime.now().timestamp()
             run_info.update(
-                {'ended_at': ended_at,
-                 'exec_s': ended_at - started_at,
-                 'queue_s': (started_at - run['created_at'].timestamp())})
+                {
+                    "ended_at": ended_at,
+                    "exec_s": ended_at - started_at,
+                    "queue_s": (started_at - run["created_at"].timestamp()),
+                }
+            )
 
             DB.update_run_info(run_id, run_info)
             await Runs.set_status(run_id, "error")
@@ -106,15 +119,22 @@ async def worker(worker_id: int):
         except RunError as error:
             ended_at = datetime.now().timestamp()
             run_info.update(
-                {'ended_at': ended_at,
-                 'exec_s': ended_at - started_at,
-                 'queue_s': (started_at - run['created_at'].timestamp())})
+                {
+                    "ended_at": ended_at,
+                    "exec_s": ended_at - started_at,
+                    "queue_s": (started_at - run["created_at"].timestamp()),
+                }
+            )
 
             DB.update_run_info(run_id, run_info)
             await Runs.set_status(run_id, "error")
             DB.add_run_output(run_id, str(error))
-            log_run(worker_id, run_id, "failed", **{
-                    'error': str(error), **run_stats(run_info)})
+            log_run(
+                worker_id,
+                run_id,
+                "failed",
+                **{"error": str(error), **run_stats(run_info)},
+            )
 
             await RUNS_QUEUE.put(run_id)  # Re-queue for retry
 

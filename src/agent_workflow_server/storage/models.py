@@ -1,13 +1,12 @@
-from dataclasses import dataclass
-import json
-from typing import Any, Dict, Optional, TypedDict, Literal
-from uuid import UUID
 from datetime import datetime
+from typing import Any, Dict, Literal, Optional, TypedDict
 
-RunStatus = Literal['pending', 'error', 'success', 'timeout', 'interrupted']
+RunStatus = Literal["pending", "error", "success", "timeout", "interrupted"]
+
 
 class Run(TypedDict):
     """Definition for a Run record"""
+
     run_id: str
     agent_id: str
     thread_id: str
@@ -18,8 +17,10 @@ class Run(TypedDict):
     updated_at: datetime
     status: RunStatus
 
+
 class RunInfo(TypedDict):
     """Definition of statistics information about a Run"""
+
     run_id: str
     attempts: Optional[int]
     started_at: Optional[datetime]

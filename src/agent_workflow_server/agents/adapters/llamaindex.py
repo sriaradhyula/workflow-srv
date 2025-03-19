@@ -1,7 +1,10 @@
-from typing import Optional
-from llama_index.core.workflow import Workflow
-from agent_workflow_server.agents.base import BaseAgent, BaseAdapter
 import inspect
+from typing import Optional
+
+from llama_index.core.workflow import Workflow
+
+from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
+
 
 class LlamaIndexAdapter(BaseAdapter):
     def load_agent(self, agent: object) -> Optional[BaseAgent]:

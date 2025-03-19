@@ -7,7 +7,7 @@ PACKAGE_NAME := agent_workflow_server.generated
 GENERATOR_IMAGE := openapitools/openapi-generator-cli:latest
 ADDITIONAL_PROPERTIES := packageName=$(PACKAGE_NAME),python_typed=true
 
-.PHONY: clean validate-spec update-spec generate-api run docker-build-dev
+.PHONY: clean validate-spec update-spec generate-api run docker-build-dev test format lint lint-fix
 
 # Ensure output directory exists
 $(OUTPUT_DIR):
@@ -45,6 +45,18 @@ generate-api: clean update-spec
 run:
 	poetry install
 	poetry run server
+
+test:
+	poetry run pytest
+
+format:
+	poetry run ruff format .
+
+lint:
+	poetry run ruff check .
+
+lint-fix:
+	poetry run ruff check . --fix
 
 docker-build-dev: ## Build the docker image.
 	docker buildx bake workflowserver-dev --load
