@@ -5,7 +5,7 @@ OUTPUT_DIR_TMP := src/agent_workflow_server/tmp
 
 PACKAGE_NAME := agent_workflow_server.generated
 GENERATOR_IMAGE := openapitools/openapi-generator-cli:latest
-ADDITIONAL_PROPERTIES := packageName=$(PACKAGE_NAME),python_typed=true
+ADDITIONAL_PROPERTIES := packageName=$(PACKAGE_NAME)
 
 .PHONY: clean validate-spec update-spec generate-api run docker-build-dev test format lint lint-fix
 

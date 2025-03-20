@@ -20,16 +20,15 @@ import json
 
 
 
-from pydantic import ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from agent_workflow_server.generated.models.content import Content
-from agent_workflow_server.generated.models.object import object
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class Message(object):
+class Message(BaseModel):
     """
     Message
     """ # noqa: E501
@@ -37,7 +36,6 @@ class Message(object):
     content: Content
     id: Optional[StrictStr] = Field(default=None, description="The ID of the message.")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="The metadata of the message.")
-    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["role", "content", "id", "metadata"]
 
     model_config = {
@@ -70,23 +68,16 @@ class Message(object):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
         """
         _dict = self.model_dump(
             by_alias=True,
             exclude={
-                "additional_properties",
             },
             exclude_none=True,
         )
         # override the default output from pydantic by calling `to_dict()` of content
         if self.content:
             _dict['content'] = self.content.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
         return _dict
 
     @classmethod
@@ -104,11 +95,6 @@ class Message(object):
             "id": obj.get("id"),
             "metadata": obj.get("metadata")
         })
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
         return _obj
 
 
