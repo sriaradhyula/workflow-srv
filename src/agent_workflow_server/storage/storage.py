@@ -26,7 +26,7 @@ class InMemoryDB(DBOperations):
         self._runs_info: Dict[str, RunInfo] = {}
         self._runs_output: Dict[str, Any] = {}
 
-        use_fs_storage = os.getenv("AGWS_STORAGE_PERSIST") == "True"
+        use_fs_storage = os.getenv("AGWS_STORAGE_PERSIST", "True") == "True"
         if use_fs_storage:
             storage_file = os.getenv("AGWS_STORAGE_PATH") or "agws_storage.pkl"
             self.storage_file = storage_file

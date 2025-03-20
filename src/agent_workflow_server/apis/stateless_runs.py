@@ -31,6 +31,27 @@ from agent_workflow_server.services.runs import Runs
 router = APIRouter()
 
 
+async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
+    try:
+        run, run_output = await Runs.wait_for_output(run_id)
+    except TimeoutError:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    if run is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    if run.status == "success" and run_output is not None:
+        return RunWaitResponse(
+            run=run,
+            output=RunOutput(RunResult(type="result", values=run_output)),
+        )
+    else:
+        return RunWaitResponse(
+            run=run,
+            output=RunOutput(
+                RunError(type="error", run_id=run_id, errcode=1, description=run_output)
+            ),
+        )
+
+
 @router.post(
     "/runs/{run_id}/cancel",
     responses={
@@ -98,7 +119,8 @@ async def create_and_wait_for_stateless_run_output(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
 ) -> RunWaitResponse:
     """Create a stateless run and wait for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
-    raise HTTPException(status_code=500, detail="Not implemented")
+    new_run = await Runs.put(run_create_stateless)
+    return await _wait_and_return_run_output(new_run.run_id)
 
 
 @router.post(
@@ -223,19 +245,4 @@ async def wait_for_stateless_run_output(
     ),
 ) -> RunWaitResponse:
     """Retrieve the last output of the run.  The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
-    try:
-        run, run_output = await Runs.wait_for_output(run_id)
-    except TimeoutError:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    if run is None:
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
-    if run.status == "success" and run_output is not None:
-        return RunOutput(
-            RunResult(
-                type="result", run_id=run_id, status=run.status, result=run_output
-            )
-        )
-    else:
-        return RunOutput(
-            RunError(type="error", run_id=run_id, errcode=1, description=run_output)
-        )
+    return await _wait_and_return_run_output(run_id)
