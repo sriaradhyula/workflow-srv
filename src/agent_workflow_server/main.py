@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI
 
 from agent_workflow_server.agents.load import load_agents
 from agent_workflow_server.apis.agents import router as AgentsApiRouter
-from agent_workflow_server.apis.runs import router as RunsApiRouter
+from agent_workflow_server.apis.stateless_runs import router as StatelessRunsApiRouter
 from agent_workflow_server.auth.auth import auth_middleware, setup_api_key_auth
 from agent_workflow_server.logger.custom_logger import CustomLoggerHandler
 from agent_workflow_server.services.queue import start_workers
@@ -37,7 +37,7 @@ app.include_router(
     dependencies=[Depends(auth_middleware)],
 )
 app.include_router(
-    router=RunsApiRouter,
+    router=StatelessRunsApiRouter,
     dependencies=[Depends(auth_middleware)],
 )
 
