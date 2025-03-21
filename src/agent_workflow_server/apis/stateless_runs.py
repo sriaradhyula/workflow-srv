@@ -5,6 +5,7 @@ from typing import List, Optional
 from fastapi import (
     APIRouter,
     Body,
+    Depends,
     HTTPException,
     Path,
     Query,
@@ -27,8 +28,25 @@ from agent_workflow_server.generated.models.run_output_stream import RunOutputSt
 from agent_workflow_server.generated.models.run_search_request import RunSearchRequest
 from agent_workflow_server.generated.models.run_wait_response import RunWaitResponse
 from agent_workflow_server.services.runs import Runs
+from agent_workflow_server.services.validation import (
+    InvalidFormatException,
+)
+from agent_workflow_server.services.validation import (
+    validate_run_create as validate,
+)
 
 router = APIRouter()
+
+
+async def _validate_run_create(run_create: RunCreateStateless) -> RunCreateStateless:
+    """Validate RunCreate input against agent's descriptor schema"""
+    try:
+        validate(run_create)
+    except InvalidFormatException:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid input",
+        )
 
 
 async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
@@ -36,6 +54,10 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
         run, run_output = await Runs.wait_for_output(run_id)
     except TimeoutError:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except InvalidFormatException as e:
+        return Response(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=str(e)
+        )
     if run is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     if run.status == "success" and run_output is not None:
@@ -95,6 +117,7 @@ async def cancel_stateless_run(
     tags=["Stateless Runs"],
     summary="Create a stateless run and stream its output",
     response_model_by_alias=True,
+    dependencies=[Depends(_validate_run_create)],
 )
 async def create_and_stream_stateless_run_output(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
@@ -114,6 +137,7 @@ async def create_and_stream_stateless_run_output(
     tags=["Stateless Runs"],
     summary="Create a stateless run and wait for its output",
     response_model_by_alias=True,
+    dependencies=[Depends(_validate_run_create)],
 )
 async def create_and_wait_for_stateless_run_output(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
@@ -134,6 +158,7 @@ async def create_and_wait_for_stateless_run_output(
     tags=["Stateless Runs"],
     summary="Create a Background stateless Run",
     response_model_by_alias=True,
+    dependencies=[Depends(_validate_run_create)],
 )
 async def create_stateless_run(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
