@@ -67,8 +67,8 @@ def _resolve_agent(name: str, path: str) -> AgentInfo:
         module_name = module_or_file
         try:
             module = importlib.import_module(module_name)
-        except ImportError:
-            raise ImportError(
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
                 f"""Failed to load agent module {module_name}. \
 Check if it\'s installed and that module name in 'AGENTS_REF' env variable is correct."""
             )
