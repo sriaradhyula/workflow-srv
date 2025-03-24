@@ -1,7 +1,13 @@
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 RunStatus = Literal["pending", "error", "success", "timeout", "interrupted"]
+
+
+class Config(TypedDict):
+    tags: Optional[List[str]]
+    recursion_limit: Optional[int]
+    configurable: Optional[Dict[str, Any]]
 
 
 class Run(TypedDict):
@@ -11,8 +17,8 @@ class Run(TypedDict):
     agent_id: str
     thread_id: str
     input: Dict[str, Any]
-    config: Dict[str, Any]
-    metadata: Dict[str, Any]
+    config: Optional[Config]
+    metadata: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
     status: RunStatus

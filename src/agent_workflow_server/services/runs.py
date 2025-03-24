@@ -40,8 +40,8 @@ def _make_run(run_create: ApiRunCreate) -> Run:
         "agent_id": run_create.agent_id if run_create.agent_id else str(uuid4()),
         "thread_id": str(uuid4()),  # TODO
         "input": run_create.input if run_create.input else {},
-        "config": run_create.config.model_dump() if run_create.config else {},
-        "metadata": run_create.metadata if run_create.metadata else {},
+        "config": run_create.config,
+        "metadata": run_create.metadata,
         "created_at": curr_time,
         "updated_at": curr_time,
         "status": "pending",
