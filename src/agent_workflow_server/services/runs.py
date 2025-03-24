@@ -15,6 +15,7 @@ from agent_workflow_server.generated.models.run_creation import RunCreation
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
+from ..utils.tools import is_valid_uuid
 from .message import Message
 
 logger = logging.getLogger(__name__)
@@ -35,9 +36,12 @@ def _make_run(run_create: ApiRunCreate) -> Run:
 
     curr_time = datetime.now()
 
+    if not is_valid_uuid(run_create.agent_id):
+        raise ValueError(f'agent_id "{run_create.agent_id}" is not a valid UUID')
+
     return {
         "run_id": str(uuid4()),
-        "agent_id": run_create.agent_id if run_create.agent_id else str(uuid4()),
+        "agent_id": run_create.agent_id,
         "thread_id": str(uuid4()),  # TODO
         "input": run_create.input if run_create.input else {},
         "config": run_create.config,
