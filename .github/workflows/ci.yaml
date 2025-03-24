@@ -1,5 +1,17 @@
 name: CI
-on: [ push, pull_request ]
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "main"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -21,3 +33,10 @@ jobs:
         run: poetry run ruff check --output-format=github .
       - name: Unit test
         run: poetry run pytest
+  docker-build:
+    name: Build wfsrv docker image
+    uses: ./.github/workflows/reusable-docker-build-push.yaml
+    with:
+      bake-target: workflowserver
+      image-name: wfsrv
+      image-tag: ${{ github.sha }}
