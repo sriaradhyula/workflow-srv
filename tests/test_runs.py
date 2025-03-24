@@ -32,7 +32,8 @@ async def test_invoke(mocker: MockerFixture):
         worker_task = loop.create_task(start_workers(1))
 
         new_run = await Runs.put(run_create=run_create_mock)
-        assert new_run.creation.input == run_create_mock.input
+        assert isinstance(new_run.creation.actual_instance, ApiRunCreate)
+        assert new_run.creation.actual_instance.input == run_create_mock.input
 
         try:
             run, output = await Runs.wait_for_output(run_id=new_run.run_id)
@@ -67,7 +68,8 @@ async def test_invoke_timeout(mocker: MockerFixture, timeout: float):
         worker_task = loop.create_task(start_workers(1))
 
         new_run = await Runs.put(run_create=run_create_mock)
-        assert new_run.creation.input == run_create_mock.input
+        assert isinstance(new_run.creation.actual_instance, ApiRunCreate)
+        assert new_run.creation.actual_instance.input == run_create_mock.input
 
         try:
             run, output = await Runs.wait_for_output(

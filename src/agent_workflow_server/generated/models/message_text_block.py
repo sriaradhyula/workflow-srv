@@ -20,29 +20,21 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
-from agent_workflow_server.generated.models.stream_event_payload import StreamEventPayload
+from pydantic import BaseModel, ConfigDict, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class RunOutputStream(BaseModel):
+class MessageTextBlock(BaseModel):
     """
-    Server-sent event containing one agent output event. Actual event type is carried inside the data.
+    MessageTextBlock
     """ # noqa: E501
-    id: StrictStr = Field(description="Unique identifier of the event")
-    event: StrictStr = Field(description="Event type. This is the constant string `agent_event` to be compatible with SSE spec. The actual type differentiation is done in the event itself.")
-    data: StreamEventPayload
-    __properties: ClassVar[List[str]] = ["id", "event", "data"]
-
-    @field_validator('event')
-    def event_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in ('agent_event',):
-            raise ValueError("must be one of enum values ('agent_event')")
-        return value
+    text: StrictStr
+    type: Optional[Any]
+    metadata: Optional[Dict[str, Any]] = None
+    __properties: ClassVar[List[str]] = ["text", "type", "metadata"]
 
     model_config = {
         "populate_by_name": True,
@@ -62,7 +54,7 @@ class RunOutputStream(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of RunOutputStream from a JSON string"""
+        """Create an instance of MessageTextBlock from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,14 +73,16 @@ class RunOutputStream(BaseModel):
             },
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of RunOutputStream from a dict"""
+        """Create an instance of MessageTextBlock from a dict"""
         if obj is None:
             return None
 
@@ -96,9 +90,9 @@ class RunOutputStream(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "event": obj.get("event"),
-            "data": StreamEventPayload.from_dict(obj.get("data")) if obj.get("data") is not None else None
+            "text": obj.get("text"),
+            "type": obj.get("type"),
+            "metadata": obj.get("metadata")
         })
         return _obj
 

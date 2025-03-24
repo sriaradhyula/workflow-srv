@@ -23,13 +23,14 @@ from fastapi import (  # noqa: F401
 )
 
 from agent_workflow_server.generated.models.extra_models import TokenModel  # noqa: F401
-from pydantic import Field, StrictStr
-from typing import Any, Dict, List
+from pydantic import Field, StrictInt, StrictStr
+from typing import Any, List, Optional
 from typing_extensions import Annotated
-from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.thread import Thread
 from agent_workflow_server.generated.models.thread_create import ThreadCreate
+from agent_workflow_server.generated.models.thread_patch import ThreadPatch
 from agent_workflow_server.generated.models.thread_search_request import ThreadSearchRequest
+from agent_workflow_server.generated.models.thread_state import ThreadState
 
 
 router = APIRouter()
@@ -40,10 +41,29 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 
 
 @router.post(
-    "/threads",
+    "/threads/{thread_id}/copy",
     responses={
         200: {"model": Thread, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
+        422: {"model": str, "description": "Validation Error"},
+    },
+    tags=["Threads"],
+    summary="Copy Thread",
+    response_model_by_alias=True,
+)
+async def copy_thread(
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
+) -> Thread:
+    """Create a new thread with a copy of the state and checkpoints from an existing thread."""
+    if not BaseThreadsApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseThreadsApi.subclasses[0]().copy_thread(thread_id)
+
+
+@router.post(
+    "/threads",
+    responses={
+        200: {"model": Thread, "description": "Success"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -54,7 +74,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 async def create_thread(
     thread_create: ThreadCreate = Body(None, description=""),
 ) -> Thread:
-    """Create an empty thread. This is useful to associate metadata to a thread."""
+    """Create a new thread. """
     if not BaseThreadsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
     return await BaseThreadsApi.subclasses[0]().create_thread(thread_create)
@@ -63,9 +83,8 @@ async def create_thread(
 @router.delete(
     "/threads/{thread_id}",
     responses={
-        200: {"model": Thread, "description": "Success"},
+        204: {"description": "Success"},
         404: {"model": str, "description": "Not Found"},
-        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Threads"],
@@ -74,7 +93,7 @@ async def create_thread(
 )
 async def delete_thread(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
-) -> Thread:
+) -> None:
     """Delete a thread."""
     if not BaseThreadsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -82,36 +101,14 @@ async def delete_thread(
 
 
 @router.get(
-    "/runs/{run_id}/threadstate",
-    responses={
-        200: {"model": object, "description": "Success"},
-        404: {"model": str, "description": "Not Found"},
-        409: {"model": str, "description": "Conflict"},
-        422: {"model": str, "description": "Validation Error"},
-    },
-    tags=["Threads"],
-    summary="Retrieve the thread state at the end of the run",
-    response_model_by_alias=True,
-)
-async def get_run_threadstate(
-    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
-) -> object:
-    """This call can be used only for agents that support thread, i.e. for Runs that specify a thread ID. It can be called only on runs that are in &#x60;success&#x60; status. It returns the thread state at the end of the Run. Can be used to reconstruct the evolution of the thread state in its history."""
-    if not BaseThreadsApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseThreadsApi.subclasses[0]().get_run_threadstate(run_id)
-
-
-@router.get(
     "/threads/{thread_id}",
     responses={
         200: {"model": Thread, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
-        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Threads"],
-    summary="Get a previously created Thread",
+    summary="Get Thread",
     response_model_by_alias=True,
 )
 async def get_thread(
@@ -126,43 +123,44 @@ async def get_thread(
 @router.get(
     "/threads/{thread_id}/history",
     responses={
-        200: {"model": List[Run], "description": "Success"},
+        200: {"model": List[ThreadState], "description": "Success"},
         404: {"model": str, "description": "Not Found"},
-        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Threads"],
-    summary="Retrieve the list of runs and associated state at the end of each run.",
+    summary="Get Thread History",
     response_model_by_alias=True,
 )
 async def get_thread_history(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
-) -> List[Run]:
-    """Retrieve ordered list of runs for this thread in chronological order."""
+    limit: Optional[StrictInt] = Query(10, description="", alias="limit"),
+    before: Optional[StrictStr] = Query(None, description="", alias="before"),
+) -> List[ThreadState]:
+    """Get all past states for a thread."""
     if not BaseThreadsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseThreadsApi.subclasses[0]().get_thread_history(thread_id)
+    return await BaseThreadsApi.subclasses[0]().get_thread_history(thread_id, limit, before)
 
 
-@router.get(
-    "/threads/{thread_id}/state",
+@router.patch(
+    "/threads/{thread_id}",
     responses={
-        200: {"model": object, "description": "Success"},
+        200: {"model": Thread, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
-        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Threads"],
-    summary="Retrieve the current state associated with the thread",
+    summary="Patch Thread",
     response_model_by_alias=True,
 )
-async def get_thread_state(
+async def patch_thread(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
-) -> object:
-    """Retrieve the the current state associated with the thread"""
+    thread_patch: ThreadPatch = Body(None, description=""),
+) -> Thread:
+    """Update a thread."""
     if not BaseThreadsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseThreadsApi.subclasses[0]().get_thread_state(thread_id)
+    return await BaseThreadsApi.subclasses[0]().patch_thread(thread_id, thread_patch)
 
 
 @router.post(

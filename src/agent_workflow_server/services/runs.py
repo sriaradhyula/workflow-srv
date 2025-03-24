@@ -8,9 +8,10 @@ from uuid import uuid4
 from agent_workflow_server.generated.models.run import (
     Run as ApiRun,
 )
-from agent_workflow_server.generated.models.run import (
-    RunCreate as ApiRunCreate,
+from agent_workflow_server.generated.models.run_create_stateless import (
+    RunCreateStateless as ApiRunCreate,
 )
+from agent_workflow_server.generated.models.run_creation import RunCreation
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
@@ -43,8 +44,8 @@ def _make_run(run_create: ApiRunCreate) -> Run:
         "agent_id": run_create.agent_id,
         "thread_id": str(uuid4()),  # TODO
         "input": run_create.input if run_create.input else {},
-        "config": run_create.config if run_create.config else {},
-        "metadata": run_create.metadata if run_create.metadata else {},
+        "config": run_create.config,
+        "metadata": run_create.metadata,
         "created_at": curr_time,
         "updated_at": curr_time,
         "status": "pending",
@@ -62,13 +63,15 @@ def _to_api_model(run: Run) -> ApiRun:
         Run: The API model representation of the run.
     """
     return ApiRun(
-        creation=ApiRunCreate(
-            agent_id=run["agent_id"],
-            thread_id=run["thread_id"],
-            input=run["input"],
-            metadata=run["metadata"],
-            config=run["config"],
-            webhook=None,  # TODO
+        creation=RunCreation(
+            ApiRunCreate(
+                agent_id=run["agent_id"],
+                thread_id=run["thread_id"],
+                input=run["input"],
+                metadata=run["metadata"],
+                config=run["config"],
+                webhook=None,  # TODO
+            )
         ),
         run_id=run["run_id"],
         agent_id=run["agent_id"],

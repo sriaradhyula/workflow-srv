@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, Optional
 
+from agent_workflow_server.storage.models import Config
+
 
 class BaseAgent(ABC):
     @abstractmethod
-    async def astream(self, input: dict, config: dict) -> AsyncGenerator[Any, None]:
+    async def astream(self, input: dict, config: Config) -> AsyncGenerator[Any, None]:
         """Invokes the agent with the given input and configuration and streams (returns) events asynchronously.
         The last event includes the final result."""
         pass

@@ -53,7 +53,6 @@ async def get_acp_descriptor_by_id(
     responses={
         200: {"model": Agent, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
-        422: {"model": str, "description": "Validation Error"},
     },
     tags=["Agents"],
     summary="Get Agent",

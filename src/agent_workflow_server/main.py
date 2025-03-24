@@ -15,7 +15,7 @@ from agent_workflow_server.apis.authentication import (
     authentication_with_api_key,
     setup_api_key_auth,
 )
-from agent_workflow_server.apis.runs import router as RunsApiRouter
+from agent_workflow_server.apis.stateless_runs import router as StatelessRunsApiRouter
 from agent_workflow_server.logger.custom_logger import CustomLoggerHandler
 from agent_workflow_server.services.queue import start_workers
 
@@ -40,7 +40,7 @@ app.include_router(
     dependencies=[Depends(authentication_with_api_key)],
 )
 app.include_router(
-    router=RunsApiRouter,
+    router=StatelessRunsApiRouter,
     dependencies=[Depends(authentication_with_api_key)],
 )
 

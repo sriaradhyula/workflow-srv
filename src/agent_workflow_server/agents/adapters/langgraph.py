@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.graph import CompiledGraph, Graph
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
+from agent_workflow_server.storage.models import Config
 
 
 class LangGraphAdapter(BaseAdapter):
@@ -19,10 +20,14 @@ class LangGraphAgent(BaseAgent):
     def __init__(self, agent: CompiledGraph):
         self.agent = agent
 
-    async def astream(self, input: dict, config: dict):
+    async def astream(self, input: dict, config: Config):
         async for event in self.agent.astream(
             input=input,
-            config=RunnableConfig(configurable=config),
+            config=RunnableConfig(
+                configurable=config["configurable"],
+                tags=config["tags"],
+                recursion_limit=config["recursion_limit"],
+            ),
             stream_mode="values",
         ):
             yield event
