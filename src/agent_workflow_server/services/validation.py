@@ -4,7 +4,9 @@ from typing import Any
 import jsonschema
 
 from agent_workflow_server.agents.load import AGENTS
-from agent_workflow_server.generated.models.run_create import RunCreate
+from agent_workflow_server.generated.models.run_create_stateless import (
+    RunCreateStateless,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +47,14 @@ def validate_output(run_id, agent_id: str, output: Any) -> None:
         )
 
 
-def validate_run_create(run_create: RunCreate) -> RunCreate:
+def validate_run_create(run_create: RunCreateStateless) -> RunCreateStateless:
     """Validate RunCreate input against agent's descriptor schema"""
     schemas = get_agent_schemas(run_create.agent_id)
     if run_create.input:
         validate_against_schema(run_create.input, schemas["input"])
 
-    if run_create.config:
-        validate_against_schema(run_create.config, schemas["config"])
+    if run_create.config.configurable:
+        print(run_create.config.configurable)
+        validate_against_schema(run_create.config.configurable, schemas["config"])
 
     return run_create
