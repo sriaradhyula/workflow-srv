@@ -95,7 +95,7 @@ async def create_and_stream_thread_run_output(
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Thread Runs"],
-    summary="Create a run on a thread and wait for its output output",
+    summary="Create a run on a thread and block waiting for the result of the run",
     response_model_by_alias=True,
 )
 async def create_and_wait_for_thread_run_output(
@@ -104,7 +104,7 @@ async def create_and_wait_for_thread_run_output(
     ),
     run_create_stateful: RunCreateStateful = Body(None, description=""),
 ) -> RunWaitResponse:
-    """Create a run on a thread and wait for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
+    """Create a run on a thread and block waiting for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
 
 
@@ -198,6 +198,31 @@ async def list_thread_runs(
     raise HTTPException(status_code=500, detail="Not implemented")
 
 
+@router.post(
+    "/threads/{thread_id}/runs/{run_id}",
+    responses={
+        200: {"model": Run, "description": "Success"},
+        404: {"model": str, "description": "Not Found"},
+        409: {"model": str, "description": "Conflict"},
+        422: {"model": str, "description": "Validation Error"},
+    },
+    tags=["Thread Runs"],
+    summary="Resume an interrupted Run",
+    response_model_by_alias=True,
+)
+async def resume_thread_run(
+    thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
+        ..., description="The ID of the thread."
+    ),
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
+        ..., description="The ID of the run."
+    ),
+    body: Dict[str, Any] = Body(None, description=""),
+) -> Run:
+    """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
+    raise HTTPException(status_code=500, detail="Not implemented")
+
+
 @router.get(
     "/threads/{thread_id}/runs/{run_id}/stream",
     responses={
@@ -232,7 +257,7 @@ async def stream_thread_run_output(
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Thread Runs"],
-    summary="Retrieve last output of a run if available",
+    summary="Blocks waiting for the result of the run.",
     response_model_by_alias=True,
 )
 async def wait_for_thread_run_output(
@@ -243,5 +268,5 @@ async def wait_for_thread_run_output(
         ..., description="The ID of the run."
     ),
 ) -> RunWaitResponse:
-    """Retrieve the output of the run if available. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
+    """Blocks waiting for the result of the run. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")

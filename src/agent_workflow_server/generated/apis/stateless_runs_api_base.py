@@ -3,7 +3,7 @@
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
 from pydantic import Field, StrictBool, StrictStr, field_validator
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateless import RunCreateStateless
@@ -67,6 +67,15 @@ class BaseStatelessRunsApi:
         ...
 
 
+    async def resume_stateless_run(
+        self,
+        run_id: Annotated[StrictStr, Field(description="The ID of the run.")],
+        body: Dict[str, Any],
+    ) -> Run:
+        """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
+        ...
+
+
     async def search_stateless_runs(
         self,
         run_search_request: RunSearchRequest,
@@ -87,5 +96,5 @@ class BaseStatelessRunsApi:
         self,
         run_id: Annotated[StrictStr, Field(description="The ID of the run.")],
     ) -> RunWaitResponse:
-        """Retrieve the last output of the run.  The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
+        """Blocks waiting for the result of the run. The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
         ...

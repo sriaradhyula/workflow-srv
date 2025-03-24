@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -79,6 +79,7 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
     responses={
         204: {"description": "Success"},
         404: {"model": str, "description": "Not Found"},
+        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Stateless Runs"],
@@ -214,6 +215,28 @@ async def get_stateless_run(
 
 
 @router.post(
+    "/runs/{run_id}",
+    responses={
+        200: {"model": Run, "description": "Success"},
+        404: {"model": str, "description": "Not Found"},
+        409: {"model": str, "description": "Conflict"},
+        422: {"model": str, "description": "Validation Error"},
+    },
+    tags=["Stateless Runs"],
+    summary="Resume an interrupted Run",
+    response_model_by_alias=True,
+)
+async def resume_stateless_run(
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
+        ..., description="The ID of the run."
+    ),
+    body: Dict[str, Any] = Body(None, description=""),
+) -> Run:
+    """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
+    raise HTTPException(status_code=500, detail="Not implemented")
+
+
+@router.post(
     "/runs/search",
     responses={
         200: {"model": List[Run], "description": "Success"},
@@ -261,7 +284,7 @@ async def stream_stateless_run_output(
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Stateless Runs"],
-    summary="Retrieve last output of a run if available",
+    summary="Blocks waiting for the result of the run.",
     response_model_by_alias=True,
 )
 async def wait_for_stateless_run_output(
@@ -269,5 +292,5 @@ async def wait_for_stateless_run_output(
         ..., description="The ID of the run."
     ),
 ) -> RunWaitResponse:
-    """Retrieve the last output of the run.  The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
+    """Blocks waiting for the result of the run. The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
     return await _wait_and_return_run_output(run_id)

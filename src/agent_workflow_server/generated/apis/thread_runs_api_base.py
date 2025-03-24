@@ -3,7 +3,7 @@
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateful import RunCreateStateful
@@ -41,7 +41,7 @@ class BaseThreadRunsApi:
         thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")],
         run_create_stateful: RunCreateStateful,
     ) -> RunWaitResponse:
-        """Create a run on a thread and wait for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
+        """Create a run on a thread and block waiting for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
         ...
 
 
@@ -82,6 +82,16 @@ class BaseThreadRunsApi:
         ...
 
 
+    async def resume_thread_run(
+        self,
+        thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")],
+        run_id: Annotated[StrictStr, Field(description="The ID of the run.")],
+        body: Dict[str, Any],
+    ) -> Run:
+        """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
+        ...
+
+
     async def stream_thread_run_output(
         self,
         thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")],
@@ -96,5 +106,5 @@ class BaseThreadRunsApi:
         thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")],
         run_id: Annotated[StrictStr, Field(description="The ID of the run.")],
     ) -> RunWaitResponse:
-        """Retrieve the output of the run if available. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
+        """Blocks waiting for the result of the run. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
         ...

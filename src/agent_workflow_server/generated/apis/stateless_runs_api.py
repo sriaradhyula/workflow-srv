@@ -24,7 +24,7 @@ from fastapi import (  # noqa: F401
 
 from agent_workflow_server.generated.models.extra_models import TokenModel  # noqa: F401
 from pydantic import Field, StrictBool, StrictStr, field_validator
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateless import RunCreateStateless
@@ -66,6 +66,7 @@ async def cancel_stateless_run(
     responses={
         200: {"model": RunOutputStream, "description": "Stream of agent results either as &#x60;ValueRunResultUpdate&#x60; objects or &#x60;CustomRunResultUpdate&#x60; objects, according to the specific streaming mode requested. Note that the stream of events is carried using the format specified in SSE spec &#x60;text/event-stream&#x60;"},
         404: {"model": str, "description": "Not Found"},
+        409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Stateless Runs"],
@@ -164,6 +165,28 @@ async def get_stateless_run(
 
 
 @router.post(
+    "/runs/{run_id}",
+    responses={
+        200: {"model": Run, "description": "Success"},
+        404: {"model": str, "description": "Not Found"},
+        409: {"model": str, "description": "Conflict"},
+        422: {"model": str, "description": "Validation Error"},
+    },
+    tags=["Stateless Runs"],
+    summary="Resume an interrupted Run",
+    response_model_by_alias=True,
+)
+async def resume_stateless_run(
+    run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
+    body: Dict[str, Any] = Body(None, description=""),
+) -> Run:
+    """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
+    if not BaseStatelessRunsApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseStatelessRunsApi.subclasses[0]().resume_stateless_run(run_id, body)
+
+
+@router.post(
     "/runs/search",
     responses={
         200: {"model": List[Run], "description": "Success"},
@@ -210,13 +233,13 @@ async def stream_stateless_run_output(
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Stateless Runs"],
-    summary="Retrieve last output of a run if available",
+    summary="Blocks waiting for the result of the run.",
     response_model_by_alias=True,
 )
 async def wait_for_stateless_run_output(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
 ) -> RunWaitResponse:
-    """Retrieve the last output of the run.  The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
+    """Blocks waiting for the result of the run. The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
     return await BaseStatelessRunsApi.subclasses[0]().wait_for_stateless_run_output(run_id)

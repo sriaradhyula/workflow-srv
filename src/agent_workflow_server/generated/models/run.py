@@ -36,12 +36,12 @@ class Run(BaseModel):
     """ # noqa: E501
     creation: RunCreation
     run_id: StrictStr = Field(description="The ID of the run.")
-    agent_id: StrictStr = Field(description="The agent that was used for this run.")
     thread_id: Optional[StrictStr] = Field(default=None, description="Optional Thread ID wher the Run belongs to. This is populated only for runs on agents agents supporting Threads.")
+    agent_id: StrictStr = Field(description="The agent that was used for this run.")
     created_at: datetime = Field(description="The time the run was created.")
     updated_at: datetime = Field(description="The last time the run was updated.")
     status: RunStatus = Field(description="The status of the run. One of 'pending', 'error', 'success', 'timeout', 'interrupted'.")
-    __properties: ClassVar[List[str]] = ["creation", "run_id", "agent_id", "thread_id", "created_at", "updated_at", "status"]
+    __properties: ClassVar[List[str]] = ["creation", "run_id", "thread_id", "agent_id", "created_at", "updated_at", "status"]
 
     model_config = {
         "populate_by_name": True,
@@ -97,8 +97,8 @@ class Run(BaseModel):
         _obj = cls.model_validate({
             "creation": RunCreation.from_dict(obj.get("creation")) if obj.get("creation") is not None else None,
             "run_id": obj.get("run_id"),
-            "agent_id": obj.get("agent_id"),
             "thread_id": obj.get("thread_id"),
+            "agent_id": obj.get("agent_id"),
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
             "status": obj.get("status")
