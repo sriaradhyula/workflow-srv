@@ -1,5 +1,6 @@
 from typing import Optional
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph.graph import CompiledGraph, Graph
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
@@ -20,6 +21,8 @@ class LangGraphAgent(BaseAgent):
 
     async def astream(self, input: dict, config: dict):
         async for event in self.agent.astream(
-            input=input, config=config, stream_mode="values"
+            input=input,
+            config=RunnableConfig(configurable=config),
+            stream_mode="values",
         ):
             yield event
