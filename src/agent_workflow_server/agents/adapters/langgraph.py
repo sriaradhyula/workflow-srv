@@ -20,14 +20,16 @@ class LangGraphAgent(BaseAgent):
     def __init__(self, agent: CompiledGraph):
         self.agent = agent
 
-    async def astream(self, input: dict, config: Config):
+    async def astream(self, input: dict, config: Optional[Config]):
         async for event in self.agent.astream(
             input=input,
             config=RunnableConfig(
                 configurable=config["configurable"],
                 tags=config["tags"],
                 recursion_limit=config["recursion_limit"],
-            ),
+            )
+            if config
+            else None,
             stream_mode="values",
         ):
             yield event

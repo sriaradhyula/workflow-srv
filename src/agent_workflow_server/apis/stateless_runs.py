@@ -44,10 +44,10 @@ async def _validate_run_create(
     """Validate RunCreate input against agent's descriptor schema"""
     try:
         validate(run_create_stateless)
-    except InvalidFormatException:
+    except InvalidFormatException as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid input",
+            detail=str(e),
         )
 
 

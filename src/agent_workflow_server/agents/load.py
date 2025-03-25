@@ -42,7 +42,7 @@ def _load_adapters() -> List[BaseAdapter]:
                     ):
                         adapters.append(attr())
             except ImportError as e:
-                print(f"Could not import {module_path}: {e}")
+                logger.error(f"Could not import adapter from {module_path}: {e}")
 
     return adapters
 
