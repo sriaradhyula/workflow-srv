@@ -43,8 +43,8 @@ def _make_run(run_create: ApiRunCreate) -> Run:
         "run_id": str(uuid4()),
         "agent_id": run_create.agent_id,
         "thread_id": str(uuid4()),  # TODO
-        "input": run_create.input if run_create.input else {},
-        "config": run_create.config,
+        "input": run_create.input,
+        "config": run_create.config.model_dump() if run_create.config else None,
         "metadata": run_create.metadata,
         "created_at": curr_time,
         "updated_at": curr_time,
@@ -184,12 +184,8 @@ class Runs:
                     ),
                     timeout=timeout,
                 )
-                status = DB.get_run_status(run_id)
                 run = DB.get_run(run_id)
-                if status == "success":
-                    return _to_api_model(run), DB.get_run_output(run_id)
-                else:
-                    return _to_api_model(run), None
+                return _to_api_model(run), DB.get_run_output(run_id)
         except asyncio.TimeoutError:
             logger.warning(f"Timeout reached while waiting for run {run_id}")
             raise TimeoutError

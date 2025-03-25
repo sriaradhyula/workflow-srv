@@ -16,7 +16,7 @@ class Run(TypedDict):
     run_id: str
     agent_id: str
     thread_id: str
-    input: Dict[str, Any]
+    input: Optional[Dict[str, Any]]
     config: Optional[Config]
     metadata: Optional[Dict[str, Any]]
     created_at: datetime

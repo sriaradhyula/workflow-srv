@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 from datetime import datetime
 from typing import Literal
 
@@ -92,7 +93,7 @@ async def worker(worker_id: int):
                 await Runs.Stream.publish(
                     run_id, Message(topic="error", data=(str(error)))
                 )
-                raise RunError(str(error))
+                raise RunError(error)
 
             ended_at = datetime.now().timestamp()
 
@@ -148,8 +149,9 @@ async def worker(worker_id: int):
                 worker_id,
                 run_id,
                 "failed",
-                **{"error": str(error), **run_stats(run_info)},
+                **{"error": error, **run_stats(run_info)},
             )
+            traceback.print_exc()
 
             await RUNS_QUEUE.put(run_id)  # Re-queue for retry
 
