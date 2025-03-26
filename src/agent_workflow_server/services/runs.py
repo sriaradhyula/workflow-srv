@@ -5,13 +5,12 @@ from datetime import datetime
 from typing import AsyncGenerator, Dict, List, Optional
 from uuid import uuid4
 
-from agent_workflow_server.generated.models.run import (
-    Run as ApiRun,
-)
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless as ApiRunCreate,
 )
-from agent_workflow_server.generated.models.run_creation import RunCreation
+from agent_workflow_server.generated.models.run_stateless import (
+    RunStateless as ApiRun,
+)
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
@@ -63,15 +62,13 @@ def _to_api_model(run: Run) -> ApiRun:
         Run: The API model representation of the run.
     """
     return ApiRun(
-        creation=RunCreation(
-            ApiRunCreate(
-                agent_id=run["agent_id"],
-                thread_id=run["thread_id"],
-                input=run["input"],
-                metadata=run["metadata"],
-                config=run["config"],
-                webhook=None,  # TODO
-            )
+        creation=ApiRunCreate(
+            agent_id=run["agent_id"],
+            thread_id=run["thread_id"],
+            input=run["input"],
+            metadata=run["metadata"],
+            config=run["config"],
+            webhook=None,  # TODO
         ),
         run_id=run["run_id"],
         agent_id=run["agent_id"],
