@@ -26,7 +26,9 @@ from agent_workflow_server.generated.models.run_output import (
 )
 from agent_workflow_server.generated.models.run_output_stream import RunOutputStream
 from agent_workflow_server.generated.models.run_search_request import RunSearchRequest
-from agent_workflow_server.generated.models.run_wait_response import RunWaitResponse
+from agent_workflow_server.generated.models.run_wait_response_stateless import (
+    RunWaitResponseStateless,
+)
 from agent_workflow_server.services.runs import Runs
 from agent_workflow_server.services.validation import (
     InvalidFormatException,
@@ -51,7 +53,7 @@ async def _validate_run_create(
         )
 
 
-async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
+async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
     try:
         run, run_output = await Runs.wait_for_output(run_id)
     except TimeoutError:
@@ -63,12 +65,12 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponse:
     if run is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     if run.status == "success" and run_output is not None:
-        return RunWaitResponse(
+        return RunWaitResponseStateless(
             run=run,
             output=RunOutput(RunResult(type="result", values=run_output)),
         )
     else:
-        return RunWaitResponse(
+        return RunWaitResponseStateless(
             run=run,
             output=RunOutput(
                 RunError(type="error", run_id=run_id, errcode=1, description=run_output)
@@ -132,7 +134,7 @@ async def create_and_stream_stateless_run_output(
 @router.post(
     "/runs/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -144,7 +146,7 @@ async def create_and_stream_stateless_run_output(
 )
 async def create_and_wait_for_stateless_run_output(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateless:
     """Create a stateless run and wait for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     new_run = await Runs.put(run_create_stateless)
     return await _wait_and_return_run_output(new_run.run_id)
@@ -281,7 +283,7 @@ async def stream_stateless_run_output(
 @router.get(
     "/runs/{run_id}/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -293,6 +295,6 @@ async def wait_for_stateless_run_output(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
         ..., description="The ID of the run."
     ),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateless:
     """Blocks waiting for the result of the run. The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
     return await _wait_and_return_run_output(run_id)
