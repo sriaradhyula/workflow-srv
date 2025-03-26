@@ -26,11 +26,11 @@ from agent_workflow_server.generated.models.extra_models import TokenModel  # no
 from pydantic import Field, StrictBool, StrictStr, field_validator
 from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
-from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateless import RunCreateStateless
 from agent_workflow_server.generated.models.run_output_stream import RunOutputStream
 from agent_workflow_server.generated.models.run_search_request import RunSearchRequest
-from agent_workflow_server.generated.models.run_wait_response import RunWaitResponse
+from agent_workflow_server.generated.models.run_stateless import RunStateless
+from agent_workflow_server.generated.models.run_wait_response_stateless import RunWaitResponseStateless
 
 
 router = APIRouter()
@@ -85,7 +85,7 @@ async def create_and_stream_stateless_run_output(
 @router.post(
     "/runs/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -96,7 +96,7 @@ async def create_and_stream_stateless_run_output(
 )
 async def create_and_wait_for_stateless_run_output(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateless:
     """Create a stateless run and wait for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -106,7 +106,7 @@ async def create_and_wait_for_stateless_run_output(
 @router.post(
     "/runs",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -117,7 +117,7 @@ async def create_and_wait_for_stateless_run_output(
 )
 async def create_stateless_run(
     run_create_stateless: RunCreateStateless = Body(None, description=""),
-) -> Run:
+) -> RunStateless:
     """Create a stateless run, return the run ID immediately. Don&#39;t wait for the final run output."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -147,7 +147,7 @@ async def delete_stateless_run(
 @router.get(
     "/runs/{run_id}",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -157,7 +157,7 @@ async def delete_stateless_run(
 )
 async def get_stateless_run(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
-) -> Run:
+) -> RunStateless:
     """Get a stateless run by ID."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -167,7 +167,7 @@ async def get_stateless_run(
 @router.post(
     "/runs/{run_id}",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -179,7 +179,7 @@ async def get_stateless_run(
 async def resume_stateless_run(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
     body: Dict[str, Any] = Body(None, description=""),
-) -> Run:
+) -> RunStateless:
     """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -189,7 +189,7 @@ async def resume_stateless_run(
 @router.post(
     "/runs/search",
     responses={
-        200: {"model": List[Run], "description": "Success"},
+        200: {"model": List[RunStateless], "description": "Success"},
         422: {"model": str, "description": "Validation Error"},
     },
     tags=["Stateless Runs"],
@@ -198,7 +198,7 @@ async def resume_stateless_run(
 )
 async def search_stateless_runs(
     run_search_request: RunSearchRequest = Body(None, description=""),
-) -> List[Run]:
+) -> List[RunStateless]:
     """Search for stateless run.  This endpoint also functions as the endpoint to list all stateless Runs."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -228,7 +228,7 @@ async def stream_stateless_run_output(
 @router.get(
     "/runs/{run_id}/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateless, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -238,7 +238,7 @@ async def stream_stateless_run_output(
 )
 async def wait_for_stateless_run_output(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateless:
     """Blocks waiting for the result of the run. The output can be:   * an interrupt, this happens when the agent run status is &#x60;interrupted&#x60;   * the final result of the run, this happens when the agent run status is &#x60;success&#x60;   * an error, this happens when the agent run status is &#x60;error&#x60; or &#x60;timeout&#x60;   This call blocks until the output is available."""
     if not BaseStatelessRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")

@@ -23,7 +23,9 @@ from agent_workflow_server.generated.models.extra_models import TokenModel  # no
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateful import RunCreateStateful
 from agent_workflow_server.generated.models.run_output_stream import RunOutputStream
-from agent_workflow_server.generated.models.run_wait_response import RunWaitResponse
+from agent_workflow_server.generated.models.run_wait_response_stateful import (
+    RunWaitResponseStateful,
+)
 
 router = APIRouter()
 
@@ -89,7 +91,7 @@ async def create_and_stream_thread_run_output(
 @router.post(
     "/threads/{thread_id}/runs/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -103,7 +105,7 @@ async def create_and_wait_for_thread_run_output(
         ..., description="The ID of the thread."
     ),
     run_create_stateful: RunCreateStateful = Body(None, description=""),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateful:
     """Create a run on a thread and block waiting for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
 
@@ -252,7 +254,7 @@ async def stream_thread_run_output(
 @router.get(
     "/threads/{thread_id}/runs/{run_id}/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -267,6 +269,6 @@ async def wait_for_thread_run_output(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(
         ..., description="The ID of the run."
     ),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateful:
     """Blocks waiting for the result of the run. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
