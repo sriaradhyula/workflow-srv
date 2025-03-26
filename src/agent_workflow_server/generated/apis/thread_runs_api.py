@@ -26,10 +26,10 @@ from agent_workflow_server.generated.models.extra_models import TokenModel  # no
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator
 from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
-from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateful import RunCreateStateful
 from agent_workflow_server.generated.models.run_output_stream import RunOutputStream
-from agent_workflow_server.generated.models.run_wait_response import RunWaitResponse
+from agent_workflow_server.generated.models.run_stateful import RunStateful
+from agent_workflow_server.generated.models.run_wait_response_stateful import RunWaitResponseStateful
 
 
 router = APIRouter()
@@ -86,7 +86,7 @@ async def create_and_stream_thread_run_output(
 @router.post(
     "/threads/{thread_id}/runs/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -98,7 +98,7 @@ async def create_and_stream_thread_run_output(
 async def create_and_wait_for_thread_run_output(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     run_create_stateful: RunCreateStateful = Body(None, description=""),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateful:
     """Create a run on a thread and block waiting for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -108,7 +108,7 @@ async def create_and_wait_for_thread_run_output(
 @router.post(
     "/threads/{thread_id}/runs",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -120,7 +120,7 @@ async def create_and_wait_for_thread_run_output(
 async def create_thread_run(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     run_create_stateful: RunCreateStateful = Body(None, description=""),
-) -> Run:
+) -> RunStateful:
     """Create a run on a thread, return the run ID immediately. Don&#39;t wait for the final run output."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -151,7 +151,7 @@ async def delete_thread_run(
 @router.get(
     "/threads/{thread_id}/runs/{run_id}",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -162,7 +162,7 @@ async def delete_thread_run(
 async def get_thread_run(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
-) -> Run:
+) -> RunStateful:
     """Get a run by ID."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -172,7 +172,7 @@ async def get_thread_run(
 @router.get(
     "/threads/{thread_id}/runs",
     responses={
-        200: {"model": List[Run], "description": "Success"},
+        200: {"model": List[RunStateful], "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -184,7 +184,7 @@ async def list_thread_runs(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     limit: Optional[StrictInt] = Query(10, description="", alias="limit"),
     offset: Optional[StrictInt] = Query(0, description="", alias="offset"),
-) -> List[Run]:
+) -> List[RunStateful]:
     """List runs for a thread."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -194,7 +194,7 @@ async def list_thread_runs(
 @router.post(
     "/threads/{thread_id}/runs/{run_id}",
     responses={
-        200: {"model": Run, "description": "Success"},
+        200: {"model": RunStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         409: {"model": str, "description": "Conflict"},
         422: {"model": str, "description": "Validation Error"},
@@ -207,7 +207,7 @@ async def resume_thread_run(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
     body: Dict[str, Any] = Body(None, description=""),
-) -> Run:
+) -> RunStateful:
     """Provide the needed input to a run to resume its execution. Can only be called for runs that are in the interrupted state Schema of the provided input must match with the schema specified in the agent specs under interrupts for the interrupt type the agent generated for this specific interruption."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -238,7 +238,7 @@ async def stream_thread_run_output(
 @router.get(
     "/threads/{thread_id}/runs/{run_id}/wait",
     responses={
-        200: {"model": RunWaitResponse, "description": "Success"},
+        200: {"model": RunWaitResponseStateful, "description": "Success"},
         404: {"model": str, "description": "Not Found"},
         422: {"model": str, "description": "Validation Error"},
     },
@@ -249,7 +249,7 @@ async def stream_thread_run_output(
 async def wait_for_thread_run_output(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(..., description="The ID of the thread."),
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(..., description="The ID of the run."),
-) -> RunWaitResponse:
+) -> RunWaitResponseStateful:
     """Blocks waiting for the result of the run. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     if not BaseThreadRunsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
