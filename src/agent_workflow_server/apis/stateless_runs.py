@@ -40,6 +40,8 @@ from agent_workflow_server.services.validation import (
     validate_run_create as validate,
 )
 
+from ..utils.tools import serialize_to_dict
+
 router = APIRouter()
 
 
@@ -70,7 +72,9 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
     if run.status == "success" and run_output is not None:
         return RunWaitResponseStateless(
             run=run,
-            output=RunOutput(RunResult(type="result", values=run_output)),
+            output=RunOutput(
+                RunResult(type="result", values=serialize_to_dict(run_output))
+            ),
         )
     else:
         return RunWaitResponseStateless(
