@@ -1,3 +1,6 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 # coding: utf-8
 
 from typing import Any, Dict, List, Optional
@@ -37,6 +40,8 @@ from agent_workflow_server.services.validation import (
     validate_run_create as validate,
 )
 
+from ..utils.tools import serialize_to_dict
+
 router = APIRouter()
 
 
@@ -67,7 +72,9 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
     if run.status == "success" and run_output is not None:
         return RunWaitResponseStateless(
             run=run,
-            output=RunOutput(RunResult(type="result", values=run_output)),
+            output=RunOutput(
+                RunResult(type="result", values=serialize_to_dict(run_output))
+            ),
         )
     else:
         return RunWaitResponseStateless(
@@ -254,7 +261,7 @@ async def search_stateless_runs(
     run_search_request: RunSearchRequest = Body(None, description=""),
 ) -> List[RunStateless]:
     """Search for stateless run.  This endpoint also functions as the endpoint to list all stateless Runs."""
-    raise HTTPException(status_code=500, detail="Not implemented")
+    return Runs.search(run_search_request)
 
 
 @router.get(

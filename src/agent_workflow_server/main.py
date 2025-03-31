@@ -1,3 +1,6 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 import asyncio
 import logging
 import os
@@ -10,6 +13,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 
 from agent_workflow_server.agents.load import load_agents
+from agent_workflow_server.apis.agents import public_router as PublicAgentsApiRouter
 from agent_workflow_server.apis.agents import router as AgentsApiRouter
 from agent_workflow_server.apis.authentication import (
     authentication_with_api_key,
@@ -38,6 +42,9 @@ setup_api_key_auth(app)
 app.include_router(
     router=AgentsApiRouter,
     dependencies=[Depends(authentication_with_api_key)],
+)
+app.include_router(
+    router=PublicAgentsApiRouter,
 )
 app.include_router(
     router=StatelessRunsApiRouter,
