@@ -71,6 +71,14 @@ def _read_manifest(path: str) -> AgentACPDescriptor:
 
 
 def _resolve_agent(name: str, path: str) -> AgentInfo:
+    if ":" not in path:
+        raise ValueError(
+            f"""Invalid format for AGENTS_REF environment variable. \
+Value must be a module:var pair. \
+Example: "agent1_module:agent1_var" or "path/to/file.py:agent1_var"
+Got: {path}"""
+        )
+
     module_or_file, export_symbol = path.split(":", 1)
     if not os.path.isfile(module_or_file):
         # It's a module (name), try to import it

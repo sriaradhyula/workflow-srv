@@ -126,13 +126,13 @@ async def worker(worker_id: int):
             DB.update_run_info(run_id, run_info)
 
             try:
-                validate_output(run_id, run["agent_id"], last_message.data)
                 log_run(
                     worker_id,
                     run_id,
                     "got message",
                     message_data=json.dumps(last_message.data),
                 )
+                validate_output(run_id, run["agent_id"], last_message.data)
                 DB.add_run_output(run_id, last_message.data)
                 await Runs.Stream.publish(run_id, Message(type="control", data="done"))
                 if last_message.type == "interrupt":
