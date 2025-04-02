@@ -31,13 +31,13 @@ class LangGraphAgent(BaseAgent):
         config = run["config"]
         if config is None:
             config = {}
-        configurable = config["configurable"]
+        configurable = config.get("configurable")
         if configurable is None:
             configurable = {}
         configurable.setdefault("thread_id", run["thread_id"])
 
         # If there's an interrupt answer, ovverride the input
-        if run.get("interrupt") is not None and run["interrupt"].get("user_data"):
+        if "interrupt" in run and "user_data" in run["interrupt"]:
             input = Command(resume=run["interrupt"]["user_data"])
 
         async for event in self.agent.astream(

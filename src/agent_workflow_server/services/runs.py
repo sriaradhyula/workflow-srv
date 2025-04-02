@@ -180,7 +180,7 @@ class Runs:
             raise ValueError("Run not found")
         if run["status"] != "interrupted":
             raise ValueError("Run is not in interrupted state")
-        if run["interrupt"] is None:
+        if run.get("interrupt") is None:
             raise ValueError(f"No interrupt found for run {run_id}")
 
         interrupt = run["interrupt"]
