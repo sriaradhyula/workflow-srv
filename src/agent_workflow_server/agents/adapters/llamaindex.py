@@ -92,6 +92,7 @@ class LlamaIndexAgent(BaseAgent):
         if session_id is None:
             raise ValueError("Session ID is None. Cannot set workflow state.")
 
+        print("Setting ctx")
         """Set the workflow state for this session."""
         context_dict = ctx.to_dict(serializer=JsonPickleSerializer())
         context_str = json.dumps(context_dict)
@@ -112,38 +113,53 @@ class LlamaIndexAgent(BaseAgent):
 
         ctx = self._get_ctx(run["thread_id"])
 
+        if ctx is not None:
+            print("ctx", json.dumps(ctx.to_dict(serializer=JsonPickleSerializer())))
+
         handler = self.agent.run(ctx=ctx, input={**input})
         if handler.ctx is None:
             # This should never happen, workflow.run actually sets the Context
             raise ValueError("Context cannot be None.")
 
-        async for event in handler.stream_events():
-            if isinstance(event, InputRequiredEvent):
-                # If I have a user_data, I send it to the workflow
-                if "interrupt" in run and "user_data" in run["interrupt"]:
-                    user_data = run["interrupt"]["user_data"]
+        if "interrupt" in run and "user_data" in run["interrupt"]:
+            user_data = run["interrupt"]["user_data"]
 
-                    # FIXME: workaround to extract the user response from a dict/obj. Needed for input validation, remove once not needed anymore.
-                    if isinstance(user_data, dict):
-                        user_data = list(user_data.values())[0]
-                    handler.ctx.send_event(HumanResponseEvent(response=user_data))
-                    # TODO: maybe need to delete user_data from the run
-                else:
-                    # otherwise, I send the interrupt
-                    # FIXME: workaround to wrap the prefix (str) in a dict/obj. Needed for output validation, remove once not needed anymore.
-                    yield Message(type="interrupt", data={"interrupt": event.prefix})
+            # FIXME: workaround to extract the user response from a dict/obj. Needed for input validation, remove once not needed anymore.
+            if isinstance(user_data, dict):
+                user_data = list(user_data.values())[0]
+            handler.ctx.send_event(HumanResponseEvent(response=user_data))
+
+        async for event in handler.stream_events():
+            print(
+                "handler.ctx",
+                json.dumps(handler.ctx.to_dict(serializer=JsonPickleSerializer())),
+            )
+            if isinstance(event, InputRequiredEvent):
+                # Send the interrupt
+                # FIXME: workaround to wrap the prefix (str) in a dict/obj. Needed for output validation, remove once not needed anymore.
+                self._set_ctx(
+                    ctx=handler.ctx,
+                    session_id=run["thread_id"],
+                    run_kwargs={**input},
+                )
+                yield Message(type="interrupt", data={"interrupt": event.prefix})
             else:
+                self._set_ctx(
+                    ctx=handler.ctx,
+                    session_id=run["thread_id"],
+                    run_kwargs={**input},
+                )
                 yield Message(
                     type="message",
                     data=event,
                 )
         final_result = await handler
-        yield Message(
-            type="message",
-            data=final_result,
-        )
         self._set_ctx(
             ctx=handler.ctx,
             session_id=run["thread_id"],
             run_kwargs={**input},
+        )
+        yield Message(
+            type="message",
+            data=final_result,
         )
