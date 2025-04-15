@@ -1,10 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import hashlib
 import inspect
-import json
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from llama_index.core.workflow import (
     Context,
@@ -12,20 +10,10 @@ from llama_index.core.workflow import (
     InputRequiredEvent,
     Workflow,
 )
-from llama_index.core.workflow.context_serializers import (
-    JsonPickleSerializer,
-)
-from pydantic import BaseModel, ConfigDict, Field
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 from agent_workflow_server.services.message import Message
 from agent_workflow_server.storage.models import Run
-
-
-def _make_hash(context_str: str) -> str:
-    h = hashlib.sha256()
-    h.update(context_str.encode())
-    return h.hexdigest()
 
 
 class LlamaIndexAdapter(BaseAdapter):
@@ -39,82 +27,20 @@ class LlamaIndexAdapter(BaseAdapter):
         return None
 
 
-class WorkflowState(BaseModel):
-    """Holds the state of the workflow."""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    hash: Optional[str] = Field(
-        default=None, description="Hash of the context, if any."
-    )
-    state: dict = Field(default_factory=dict, description="Pickled state, if any.")
-    run_kwargs: Dict[str, Any] = Field(
-        default_factory=dict, description="Run kwargs needed to run the workflow."
-    )
-    session_id: Optional[str] = Field(
-        default=None, description="Session ID for the current Run"
-    )
-
-
 class LlamaIndexAgent(BaseAgent):
     def __init__(self, agent: Workflow):
         self.agent = agent
-        self.sessions_state: Dict[str, str] = {}
-
-    def _get_ctx(self, session_id: str) -> Optional[Context]:
-        """Load the existing context from the workflow state, if any."""
-
-        workflow_state_json: Optional[str] = self.sessions_state.get(session_id, None)
-
-        if workflow_state_json is None:
-            return None
-
-        workflow_state = WorkflowState.model_validate_json(workflow_state_json)
-        if workflow_state.state is None:
-            return None
-
-        context_dict = workflow_state.state
-        context_str = json.dumps(context_dict)
-        context_hash = _make_hash(context_str)
-
-        if workflow_state.hash is not None and context_hash != workflow_state.hash:
-            raise ValueError("Context hash does not match.")
-
-        return Context.from_dict(
-            self.agent,
-            workflow_state.state,
-            serializer=JsonPickleSerializer(),
-        )
-
-    def _set_ctx(
-        self, ctx: Context, session_id: str, run_kwargs: Dict[str, Any]
-    ) -> None:
-        if session_id is None:
-            raise ValueError("Session ID is None. Cannot set workflow state.")
-
-        print("Setting ctx")
-        """Set the workflow state for this session."""
-        context_dict = ctx.to_dict(serializer=JsonPickleSerializer())
-        context_str = json.dumps(context_dict)
-        context_hash = _make_hash(context_str)
-
-        workflow_state = WorkflowState(
-            hash=context_hash,
-            state=context_dict,
-            run_kwargs=run_kwargs,
-            session_id=session_id,
-        )
-
-        session_state = workflow_state.model_dump_json()
-        self.sessions_state[session_id] = session_state
+        self.contexts: Dict[str, Context] = {}
 
     async def astream(self, run: Run):
         input = run["input"]
 
-        ctx = self._get_ctx(run["thread_id"])
+        print("thread_id", run["thread_id"])
 
-        if ctx is not None:
-            print("ctx", json.dumps(ctx.to_dict(serializer=JsonPickleSerializer())))
+        ctx = self.contexts.get(run["thread_id"])
+
+        # if ctx is not None:
+        #     print("ctx", json.dumps(ctx.to_dict(serializer=JsonPickleSerializer())))
 
         handler = self.agent.run(ctx=ctx, input={**input})
         if handler.ctx is None:
@@ -130,35 +56,34 @@ class LlamaIndexAgent(BaseAgent):
             handler.ctx.send_event(HumanResponseEvent(response=user_data))
 
         async for event in handler.stream_events():
-            print(
-                "handler.ctx",
-                json.dumps(handler.ctx.to_dict(serializer=JsonPickleSerializer())),
-            )
+            print("event", event)
+            # print(
+            #     "handler.ctx",
+            #     json.dumps(handler.ctx.to_dict(serializer=JsonPickleSerializer())),
+            # )
             if isinstance(event, InputRequiredEvent):
                 # Send the interrupt
+
+                self.contexts[run["thread_id"]] = handler.ctx
+                # print("await cancel_run")
+                # await handler.cancel_run()
+                # print("after await cancel_run")
+
+                # PROBLEM: with cancel_run(): I get a StopEvent() in the next iteration, and context does not match (I get a warning)
+                # BUT: without cancel_run() I get a timeout after run succeds
+
                 # FIXME: workaround to wrap the prefix (str) in a dict/obj. Needed for output validation, remove once not needed anymore.
-                self._set_ctx(
-                    ctx=handler.ctx,
-                    session_id=run["thread_id"],
-                    run_kwargs={**input},
-                )
                 yield Message(type="interrupt", data={"interrupt": event.prefix})
             else:
-                self._set_ctx(
-                    ctx=handler.ctx,
-                    session_id=run["thread_id"],
-                    run_kwargs={**input},
-                )
+                self.contexts[run["thread_id"]] = handler.ctx
                 yield Message(
                     type="message",
                     data=event,
                 )
+        print("await handler")
         final_result = await handler
-        self._set_ctx(
-            ctx=handler.ctx,
-            session_id=run["thread_id"],
-            run_kwargs={**input},
-        )
+        print("after await handler")
+        self.contexts[run["thread_id"]] = handler.ctx
         yield Message(
             type="message",
             data=final_result,
