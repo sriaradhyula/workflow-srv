@@ -22,6 +22,7 @@ from fastapi import (  # noqa: F401
 from pydantic import Field, StrictBool, StrictInt, StrictStr
 from typing_extensions import Annotated
 
+from agent_workflow_server.agents.load import get_default_agent
 from agent_workflow_server.generated.models.extra_models import TokenModel  # noqa: F401
 from agent_workflow_server.generated.models.run import Run
 from agent_workflow_server.generated.models.run_create_stateful import RunCreateStateful
@@ -31,6 +32,15 @@ from agent_workflow_server.generated.models.run_wait_response_stateful import (
 )
 
 router = APIRouter()
+
+
+async def _validate_run_create_statefull(
+    run_create_stateful: RunCreateStateful,
+) -> RunCreateStateful:
+    if run_create_stateful.agent_id is None:
+        """Pre-process the RunCreateStateless object to set the agent_id if not provided."""
+        run_create_stateful.agent_id = get_default_agent().agent_id
+    return run_create_stateful
 
 
 @router.post(
@@ -85,7 +95,9 @@ async def create_and_stream_thread_run_output(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
         ..., description="The ID of the thread."
     ),
-    run_create_stateful: RunCreateStateful = Body(None, description=""),
+    run_create_stateful: Annotated[
+        RunCreateStateful, Depends(_validate_run_create_statefull)
+    ] = Body(None, description=""),
 ) -> RunOutputStream:
     """Create a run on a thread and join its output stream. See &#39;GET /runs/{run_id}/stream&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -107,7 +119,9 @@ async def create_and_wait_for_thread_run_output(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
         ..., description="The ID of the thread."
     ),
-    run_create_stateful: RunCreateStateful = Body(None, description=""),
+    run_create_stateful: Annotated[
+        RunCreateStateful, Depends(_validate_run_create_statefull)
+    ] = Body(None, description=""),
 ) -> RunWaitResponseStateful:
     """Create a run on a thread and block waiting for its output. See &#39;GET /runs/{run_id}/wait&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
@@ -129,7 +143,9 @@ async def create_thread_run(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
         ..., description="The ID of the thread."
     ),
-    run_create_stateful: RunCreateStateful = Body(None, description=""),
+    run_create_stateful: Annotated[
+        RunCreateStateful, Depends(_validate_run_create_statefull)
+    ] = Body(None, description=""),
 ) -> Run:
     """Create a run on a thread, return the run ID immediately. Don&#39;t wait for the final run output."""
     raise HTTPException(status_code=500, detail="Not implemented")
