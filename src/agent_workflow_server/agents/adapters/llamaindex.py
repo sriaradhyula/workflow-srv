@@ -30,19 +30,16 @@ class LlamaIndexAdapter(BaseAdapter):
 class LlamaIndexAgent(BaseAgent):
     def __init__(self, agent: Workflow):
         self.agent = agent
-        self.contexts: Dict[str, Context] = {}
+        self.contexts: Dict[str, Dict] = {}
 
     async def astream(self, run: Run):
         input = run["input"]
+        ctx_data = self.contexts.get(run["thread_id"])
 
-        print("thread_id", run["thread_id"])
-
-        ctx = self.contexts.get(run["thread_id"])
-
-        # if ctx is not None:
-        #     print("ctx", json.dumps(ctx.to_dict(serializer=JsonPickleSerializer())))
-
-        handler = self.agent.run(ctx=ctx, input={**input})
+        handler = self.agent.run(
+            ctx=Context.from_dict(self.agent, ctx_data) if ctx_data else None,
+            input={**input},
+        )
         if handler.ctx is None:
             # This should never happen, workflow.run actually sets the Context
             raise ValueError("Context cannot be None.")
@@ -56,34 +53,19 @@ class LlamaIndexAgent(BaseAgent):
             handler.ctx.send_event(HumanResponseEvent(response=user_data))
 
         async for event in handler.stream_events():
-            print("event", event)
-            # print(
-            #     "handler.ctx",
-            #     json.dumps(handler.ctx.to_dict(serializer=JsonPickleSerializer())),
-            # )
+            self.contexts[run["thread_id"]] = handler.ctx.to_dict()
             if isinstance(event, InputRequiredEvent):
                 # Send the interrupt
-
-                self.contexts[run["thread_id"]] = handler.ctx
-                # print("await cancel_run")
-                # await handler.cancel_run()
-                # print("after await cancel_run")
-
-                # PROBLEM: with cancel_run(): I get a StopEvent() in the next iteration, and context does not match (I get a warning)
-                # BUT: without cancel_run() I get a timeout after run succeds
-
+                await handler.cancel_run()
                 # FIXME: workaround to wrap the prefix (str) in a dict/obj. Needed for output validation, remove once not needed anymore.
                 yield Message(type="interrupt", data={"interrupt": event.prefix})
             else:
-                self.contexts[run["thread_id"]] = handler.ctx
                 yield Message(
                     type="message",
                     data=event,
                 )
-        print("await handler")
         final_result = await handler
-        print("after await handler")
-        self.contexts[run["thread_id"]] = handler.ctx
+        self.contexts[run["thread_id"]] = handler.ctx.to_dict()
         yield Message(
             type="message",
             data=final_result,
