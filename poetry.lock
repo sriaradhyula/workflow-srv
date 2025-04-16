@@ -1293,20 +1293,20 @@ python-dotenv = ">=1.0.1,<2.0.0"
 
 [[package]]
 name = "llama-index"
-version = "0.12.28"
+version = "0.12.30"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "llama_index-0.12.28-py3-none-any.whl", hash = "sha256:e5e422a54cf4a7ee38a2c4ffacbd0c34a33bd57df993dad1213544e47b8fffec"},
-    {file = "llama_index-0.12.28.tar.gz", hash = "sha256:11f2e4bd25a9b9e2a6a0ff326b4336af10a62433d1b13ec1831debcff31a1ac8"},
+    {file = "llama_index-0.12.30-py3-none-any.whl", hash = "sha256:844cb8f65458131501a56d0359a51e41fc8e9b52151cf7dca9dd5b0171e52715"},
+    {file = "llama_index-0.12.30.tar.gz", hash = "sha256:94f33f651de96fe450e15425fea222c50e575ecd5a31359cd6e3d6a236b79095"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.4.0,<0.5.0"
 llama-index-cli = ">=0.4.1,<0.5.0"
-llama-index-core = ">=0.12.28,<0.13.0"
+llama-index-core = ">=0.12.30,<0.13.0"
 llama-index-embeddings-openai = ">=0.3.0,<0.4.0"
 llama-index-indices-managed-llama-cloud = ">=0.4.0"
 llama-index-llms-openai = ">=0.3.0,<0.4.0"
@@ -1353,14 +1353,14 @@ llama-index-llms-openai = ">=0.3.0,<0.4.0"
 
 [[package]]
 name = "llama-index-core"
-version = "0.12.28"
+version = "0.12.30"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "llama_index_core-0.12.28-py3-none-any.whl", hash = "sha256:9bd24224bd57dd5e97bb0a2550f31f6c08b7dc396305f35bbe9714d17b1409a6"},
-    {file = "llama_index_core-0.12.28.tar.gz", hash = "sha256:bf4a9697525e1294855d2df5c3a56b9720c185cde0eae2da713e7629c456c643"},
+    {file = "llama_index_core-0.12.30-py3-none-any.whl", hash = "sha256:6e0b33158de52108debe66528adb84adb626aed5c6c7762874fb7a799d8c48a9"},
+    {file = "llama_index_core-0.12.30.tar.gz", hash = "sha256:dfbed9cdba18358750ad3895cd97fa1ea0dd0b856bbd623a4904ac61641e2765"},
 ]
 
 [package.dependencies]
@@ -3825,4 +3825,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4"
-content-hash = "bc618f9e701229a4d22778222714e0ee9a8a8091ed46a69b3b9e5da78139042c"
+content-hash = "9e64d8724f0dbf74caafcfa59b6c80fdc10255169e46b5413f237171ad541df3"
