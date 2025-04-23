@@ -48,8 +48,12 @@ class LlamaIndexAgent(BaseAgent):
             user_data = run["interrupt"]["user_data"]
 
             # FIXME: workaround to extract the user response from a dict/obj. Needed for input validation, remove once not needed anymore.
-            if isinstance(user_data, dict):
+            if isinstance(user_data, dict) and len(user_data) == 1:
                 user_data = list(user_data.values())[0]
+            else:
+                raise ValueError(
+                    f"Invalid interrupt response: {user_data}. Expected a dictionary with a single key."
+                )
             handler.ctx.send_event(HumanResponseEvent(response=user_data))
 
         async for event in handler.stream_events():
