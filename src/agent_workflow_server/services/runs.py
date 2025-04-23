@@ -6,9 +6,15 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from itertools import islice
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, AsyncIterator, Union
 from uuid import uuid4
 
+from agent_workflow_server.generated.models.run_output_stream import (
+    RunOutputStream,
+)
+from agent_workflow_server.generated.models.value_run_result_update import (
+    ValueRunResultUpdate,
+)
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless as ApiRunCreate,
 )
@@ -247,6 +253,26 @@ class Runs:
 
         return None, None
 
+    @staticmethod
+    async def stream_events(run_id: str) -> AsyncIterator[Union[str,bytes]]:
+        async for message in Runs.Stream.join(run_id):
+            if message.type == "control":
+                continue
+            run = DB.get_run(run_id)
+            if run is None:
+                raise ValueError(f"Run {run_id} not found")
+            ret_obj = RunOutputStream(
+                id=str(uuid4()), # fresh event id
+                event="agent_event",
+                data={
+                    "type": "values",
+                    "run_id": run["run_id"],
+                    "status": run["status"],
+                    "values": message.data,
+                },
+            )
+            yield ret_obj.model_dump_json(exclude_none=True)
+
     class Stream:
         @staticmethod
         async def publish(run_id: str, message: Message) -> None:
@@ -262,11 +288,15 @@ class Runs:
         async def join(
             run_id: str,
         ) -> AsyncGenerator[Message, None]:
+            run = DB.get_run(run_id)
+            if run is None:
+                raise ValueError(f"Run {run_id} not found")
+
             queue = await Runs.Stream.subscribe(run_id)
             while True:
                 try:
                     message: Message = await asyncio.wait_for(queue.get(), timeout=1)
-                    if message.topic == "control" and message.data == "done":
+                    if message.type == "control" and message.data == "done":
                         break
                     yield message
                 except TimeoutError as error:

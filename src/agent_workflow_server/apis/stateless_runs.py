@@ -15,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import Field, StrictBool, StrictStr
 from typing_extensions import Annotated
 
@@ -165,7 +166,14 @@ async def create_and_stream_stateless_run_output(
     ] = Body(None, description=""),
 ) -> RunOutputStream:
     """Create a stateless run and join its output stream. See &#39;GET /runs/{run_id}/stream&#39; for details on the return values."""
-    raise HTTPException(status_code=500, detail="Not implemented")
+    try:
+        new_run = await Runs.put(run_create_stateless)
+        return StreamingResponse(Runs.stream_events(new_run.run_id), media_type="text/event-stream")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, # FIXME: use exception type to signal status
+            detail=f"Run create stream error: {str(exc)}",
+        )
 
 
 @router.post(
@@ -326,7 +334,13 @@ async def stream_stateless_run_output(
     ),
 ) -> RunOutputStream:
     """Join the output stream of an existing run. This endpoint streams output in real-time from a run. Only output produced after this endpoint is called will be streamed."""
-    raise HTTPException(status_code=500, detail="Not implemented")
+    try:
+        return StreamingResponse(Runs.stream_events(run_id), media_type="text/event-stream")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, # FIXME: use exception type to signal status
+            detail=f"Run with ID {run_id} error: {str(exc)}",
+        )
 
 
 @router.get(
