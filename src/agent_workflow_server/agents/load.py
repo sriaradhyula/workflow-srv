@@ -70,7 +70,9 @@ def _read_manifest(path: str) -> AgentACPDescriptor:
         return AgentACPDescriptor(**manifest_data)
 
 
-def _resolve_agent(name: str, path: str, add_manifest_paths: List[str] = []) -> AgentInfo:
+def _resolve_agent(
+    name: str, path: str, add_manifest_paths: List[str] = []
+) -> AgentInfo:
     if ":" not in path:
         raise ValueError(
             f"""Invalid format for AGENTS_REF environment variable. \

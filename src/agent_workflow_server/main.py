@@ -9,7 +9,7 @@ import signal
 import sys
 
 import uvicorn
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 from fastapi import Depends, FastAPI
 
 from agent_workflow_server.agents.load import load_agents
@@ -48,20 +48,34 @@ app.include_router(
     dependencies=[Depends(authentication_with_api_key)],
 )
 
+
 def signal_handler(sig, frame):
     logger.warning(f"Received {signal.Signals(sig).name}. Exiting...")
     sys.exit(0)
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Agent Workflow Server")
-    parser.add_argument('--host', default=os.getenv("API_HOST", DEFAULT_HOST))
-    parser.add_argument('--port', type=int, default=int(os.getenv("API_PORT", DEFAULT_PORT)))
-    parser.add_argument('--num-workers', type=int, default=int(os.environ.get("NUM_WORKERS", 5)))
-    parser.add_argument('--agent-manifest-path', action='append', type=pathlib.Path, default=[os.getenv('AGENT_MANIFEST_PATH', "manifest.json")])
-    parser.add_argument('--agents-ref', default=os.getenv('AGENTS_REF', None))
-    parser.add_argument('--reload', action='store_true')
-    parser.add_argument('--log-level', default=os.environ.get("NUM_WORKERS", logging.INFO))
+    parser.add_argument("--host", default=os.getenv("API_HOST", DEFAULT_HOST))
+    parser.add_argument(
+        "--port", type=int, default=int(os.getenv("API_PORT", DEFAULT_PORT))
+    )
+    parser.add_argument(
+        "--num-workers", type=int, default=int(os.environ.get("NUM_WORKERS", 5))
+    )
+    parser.add_argument(
+        "--agent-manifest-path",
+        action="append",
+        type=pathlib.Path,
+        default=[os.getenv("AGENT_MANIFEST_PATH", "manifest.json")],
+    )
+    parser.add_argument("--agents-ref", default=os.getenv("AGENTS_REF", None))
+    parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--log-level", default=os.environ.get("NUM_WORKERS", logging.INFO)
+    )
     return parser.parse_args()
+
 
 def start():
     try:

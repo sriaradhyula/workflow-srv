@@ -6,15 +6,9 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from itertools import islice
-from typing import Any, AsyncGenerator, Dict, List, Optional, AsyncIterator, Union
+from typing import Any, AsyncGenerator, AsyncIterator, Dict, List, Optional
 from uuid import uuid4
 
-from agent_workflow_server.generated.models.run_output_stream import (
-    RunOutputStream,
-)
-from agent_workflow_server.generated.models.value_run_result_update import (
-    ValueRunResultUpdate,
-)
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless as ApiRunCreate,
 )
@@ -25,7 +19,10 @@ from agent_workflow_server.generated.models.run_stateless import (
     RunStateless as ApiRun,
 )
 from agent_workflow_server.generated.models.stream_event_payload import (
-    StreamEventPayload
+    StreamEventPayload,
+)
+from agent_workflow_server.generated.models.value_run_result_update import (
+    ValueRunResultUpdate,
 )
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
@@ -268,9 +265,11 @@ class Runs:
                     yield None
                     continue
                 else:
-                    logger.error(f"received control message \"{message.data}\" in stream events for run: {run_id}")
+                    logger.error(
+                        f'received control message "{message.data}" in stream events for run: {run_id}'
+                    )
                     continue
-            
+
             # We need to get the latest value to return
             run = DB.get_run(run_id)
             if run is None:
@@ -302,13 +301,13 @@ class Runs:
         ) -> AsyncGenerator[Message, None]:
             queue = await Runs.Stream.subscribe(run_id)
 
-            # Check after subscribe whether the run is completed to 
+            # Check after subscribe whether the run is completed to
             # avoid race condition.
             run = DB.get_run(run_id)
             if run is None:
                 raise ValueError(f"Run {run_id} not found")
             if run["status"] != "pending" and queue.empty():
-                return 
+                return
 
             while True:
                 try:
