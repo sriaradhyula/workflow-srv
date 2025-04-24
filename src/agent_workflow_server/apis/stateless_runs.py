@@ -3,7 +3,7 @@
 
 # coding: utf-8
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, AsyncIterator, Union
 
 from fastapi import (
     APIRouter,
@@ -36,6 +36,7 @@ from agent_workflow_server.generated.models.run_wait_response_stateless import (
     RunWaitResponseStateless,
 )
 from agent_workflow_server.services.runs import Runs
+from agent_workflow_server.generated.models.stream_event_payload import StreamEventPayload
 from agent_workflow_server.services.validation import (
     InvalidFormatException,
 )
@@ -114,6 +115,20 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
         )
 
 
+async def __stream_sse_events(stream: AsyncIterator[StreamEventPayload | None]) -> AsyncIterator[Union[str,bytes]]:
+    last_event_id = 0
+    async for event in stream:
+        if event is None:
+            yield ":"
+        else:
+            last_event_id += 1
+            yield f"""id: {last_event_id}
+event: agent_event
+data: {event.to_json()}
+
+"""
+
+
 @router.post(
     "/runs/{run_id}/cancel",
     responses={
@@ -168,11 +183,15 @@ async def create_and_stream_stateless_run_output(
     """Create a stateless run and join its output stream. See &#39;GET /runs/{run_id}/stream&#39; for details on the return values."""
     try:
         new_run = await Runs.put(run_create_stateless)
-        return StreamingResponse(Runs.stream_events(new_run.run_id), media_type="text/event-stream")
+        return StreamingResponse(__stream_sse_events(Runs.stream_events(new_run.run_id)), media_type="text/event-stream")
+    except HTTPException:
+        raise
+    except TimeoutError as terr:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, # FIXME: use exception type to signal status
-            detail=f"Run create stream error: {str(exc)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Run create error",
         )
 
 
@@ -335,11 +354,21 @@ async def stream_stateless_run_output(
 ) -> RunOutputStream:
     """Join the output stream of an existing run. This endpoint streams output in real-time from a run. Only output produced after this endpoint is called will be streamed."""
     try:
-        return StreamingResponse(Runs.stream_events(run_id), media_type="text/event-stream")
-    except Exception as exc:
+        run = Runs.get(run_id)
+        if run is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run with ID {run_id} not found",
+            )
+        return StreamingResponse(__stream_sse_events(Runs.stream_events(run_id)), media_type="text/event-stream")
+    except HTTPException:
+        raise
+    except TimeoutError:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, # FIXME: use exception type to signal status
-            detail=f"Run with ID {run_id} error: {str(exc)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Run with ID {run_id} error",
         )
 
 

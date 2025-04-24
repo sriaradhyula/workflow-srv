@@ -8,6 +8,7 @@ from langgraph.constants import INTERRUPT
 from langgraph.graph.graph import CompiledGraph, Graph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
+from langgraph.graph import StateGraph
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 from agent_workflow_server.services.message import Message
@@ -46,6 +47,10 @@ class LangGraphAgent(BaseAgent):
         # If there's an interrupt answer, ovverride the input
         if "interrupt" in run and "user_data" in run["interrupt"]:
             input = Command(resume=run["interrupt"]["user_data"])
+
+        # If we have a StateGraph, we can validate the schema
+        if isinstance(self.agent.builder, StateGraph):
+            input = self.agent.builder.schema.model_validate(input)
 
         async for event in self.agent.astream(
             input=input,

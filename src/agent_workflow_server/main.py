@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import argparse
 import asyncio
-import json
 import logging
 import os
 import pathlib
@@ -10,11 +9,9 @@ import signal
 import sys
 
 import uvicorn
-import uvicorn.logging
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from fastapi import Depends, FastAPI
 
-import agent_workflow_server.logging.logger  # noqa: F401
 from agent_workflow_server.agents.load import load_agents
 from agent_workflow_server.apis.agents import public_router as PublicAgentsApiRouter
 from agent_workflow_server.apis.agents import router as AgentsApiRouter
@@ -25,33 +22,31 @@ from agent_workflow_server.apis.authentication import (
 from agent_workflow_server.apis.stateless_runs import router as StatelessRunsApiRouter
 from agent_workflow_server.services.queue import start_workers
 
-load_dotenv()
+load_dotenv(dotenv_path=find_dotenv(usecwd=True))
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 
 logger = logging.getLogger(__name__)
 
-def create_app() -> FastAPI:
-    app = FastAPI(
-        title="Agent Workflow Server",
-        version="0.1",
-    )
+app = FastAPI(
+    title="Agent Workflow Server",
+    version="0.1",
+)
 
-    setup_api_key_auth(app)
+setup_api_key_auth(app)
 
-    app.include_router(
-        router=AgentsApiRouter,
-        dependencies=[Depends(authentication_with_api_key)],
-    )
-    app.include_router(
-        router=PublicAgentsApiRouter,
-    )
-    app.include_router(
-        router=StatelessRunsApiRouter,
-        dependencies=[Depends(authentication_with_api_key)],
-    )
-    return app
+app.include_router(
+    router=AgentsApiRouter,
+    dependencies=[Depends(authentication_with_api_key)],
+)
+app.include_router(
+    router=PublicAgentsApiRouter,
+)
+app.include_router(
+    router=StatelessRunsApiRouter,
+    dependencies=[Depends(authentication_with_api_key)],
+)
 
 def signal_handler(sig, frame):
     logger.warning(f"Received {signal.Signals(sig).name}. Exiting...")
@@ -65,12 +60,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--agent-manifest-path', action='append', type=pathlib.Path, default=[os.getenv('AGENT_MANIFEST_PATH', "manifest.json")])
     parser.add_argument('--agents-ref', default=os.getenv('AGENTS_REF', None))
     parser.add_argument('--reload', action='store_true')
-    #parser.add_argument('--log-level', default=logging.DEBUG)
+    parser.add_argument('--log-level', default=os.environ.get("NUM_WORKERS", logging.INFO))
     return parser.parse_args()
 
 def start():
     try:
         args = parse_args()
+        logging.basicConfig(level=args.log_level.upper())
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
@@ -81,8 +77,9 @@ def start():
         loop = asyncio.get_event_loop()
         loop.create_task(start_workers(n_workers))
 
+        # use module import method to support reload argument
         config = uvicorn.Config(
-            create_app(),
+            "agent_workflow_server.main:app",
             host=args.host,
             port=args.port,
             loop="asyncio",
