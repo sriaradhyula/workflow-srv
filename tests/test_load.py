@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 import os
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -19,6 +20,7 @@ from tests.mock import (
     MockAdapter,
     MockAgent,
 )
+
 
 def _env_load_agents():
     agent_ref = os.getenv("AGENTS_REF")
