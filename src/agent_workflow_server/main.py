@@ -70,7 +70,6 @@ def parse_args() -> argparse.Namespace:
         default=[os.getenv("AGENT_MANIFEST_PATH", "manifest.json")],
     )
     parser.add_argument("--agents-ref", default=os.getenv("AGENTS_REF", None))
-    parser.add_argument("--reload", action="store_true")
     parser.add_argument(
         "--log-level", default=os.environ.get("NUM_WORKERS", logging.INFO)
     )
@@ -97,7 +96,6 @@ def start():
             host=args.host,
             port=args.port,
             loop="asyncio",
-            reload=args.reload,
         )
         server = uvicorn.Server(config)
         loop.run_until_complete(server.serve())
