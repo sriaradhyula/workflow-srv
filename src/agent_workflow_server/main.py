@@ -11,6 +11,7 @@ import uvicorn
 import uvicorn.logging
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import agent_workflow_server.logging.logger  # noqa: F401
 from agent_workflow_server.agents.load import load_agents
@@ -49,6 +50,14 @@ app.include_router(
     dependencies=[Depends(authentication_with_api_key)],
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ALLOWED_ORIGINS", "*").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def signal_handler(sig, frame):
     logger.warning(f"Received {signal.Signals(sig).name}. Exiting...")
@@ -60,7 +69,7 @@ def start():
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
         load_agents()
-        n_workers = int(os.environ.get("NUM_WORKERS", 5))
+        n_workers = int(os.getenv("NUM_WORKERS", 5))
 
         loop = asyncio.get_event_loop()
         loop.create_task(start_workers(n_workers))

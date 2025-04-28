@@ -127,7 +127,7 @@ Check that the module name and export symbol in 'AGENTS_REF' env variable are co
     # Load manifest. Check in paths below (in order)
     manifest_paths = [
         os.path.join(os.path.dirname(module.__file__), "manifest.json"),
-        os.environ.get("AGENT_MANIFEST_PATH", "manifest.json") or "manifest.json",
+        os.getenv("AGENT_MANIFEST_PATH", "manifest.json") or "manifest.json",
     ]
 
     for manifest_path in manifest_paths:
