@@ -109,9 +109,10 @@ async def worker(worker_id: int):
                             "interrupted",
                             message_data=json.dumps(message.data),
                         )
-                    await Runs.Stream.publish(run_id, message)
-                    if last_message.type == "interrupt":
+                        await Runs.Stream.publish(run_id, message)
                         break
+                    else:
+                        await Runs.Stream.publish(run_id, message)
             except Exception as error:
                 await Runs.Stream.publish(
                     run_id, Message(type="message", data=(str(error)))

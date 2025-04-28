@@ -266,7 +266,7 @@ class Runs:
                     continue
                 else:
                     logger.error(
-                        f'received control message "{message.data}" in stream events for run: {run_id}'
+                        f'received unknown control message "{message.data}" in stream events for run: {run_id}'
                     )
                     continue
 

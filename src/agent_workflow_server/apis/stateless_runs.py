@@ -117,7 +117,7 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
         )
 
 
-async def __stream_sse_events(
+async def _stream_sse_events(
     stream: AsyncIterator[StreamEventPayload | None],
 ) -> AsyncIterator[Union[str, bytes]]:
     last_event_id = 0
@@ -188,7 +188,7 @@ async def create_and_stream_stateless_run_output(
     try:
         new_run = await Runs.put(run_create_stateless)
         return StreamingResponse(
-            __stream_sse_events(Runs.stream_events(new_run.run_id)),
+            _stream_sse_events(Runs.stream_events(new_run.run_id)),
             media_type="text/event-stream",
         )
     except HTTPException:
@@ -368,7 +368,7 @@ async def stream_stateless_run_output(
                 detail=f"Run with ID {run_id} not found",
             )
         return StreamingResponse(
-            __stream_sse_events(Runs.stream_events(run_id)),
+            _stream_sse_events(Runs.stream_events(run_id)),
             media_type="text/event-stream",
         )
     except HTTPException:

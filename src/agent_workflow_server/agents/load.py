@@ -152,8 +152,6 @@ Check that the module name and export symbol in 'AGENTS_REF' env variable are co
 
 
 def load_agents(agents_ref: Optional[str] = None, add_manifest_paths: List[str] = []):
-    # Simulate loading the config from environment variable
-
     try:
         config: Dict[str, str] = json.loads(agents_ref) if agents_ref else {}
     except json.JSONDecodeError:
