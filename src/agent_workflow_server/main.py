@@ -1,10 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
-import argparse
 import asyncio
 import logging
 import os
-import pathlib
 import signal
 import sys
 
@@ -26,6 +24,8 @@ load_dotenv(dotenv_path=find_dotenv(usecwd=True))
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
+DEFAULT_NUM_WORKERS = 5
+DEFAULT_AGENT_MANIFEST_PATH = "manifest.json"
 
 logger = logging.getLogger(__name__)
 
@@ -54,38 +54,17 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Agent Workflow Server")
-    parser.add_argument("--host", default=os.getenv("API_HOST", DEFAULT_HOST))
-    parser.add_argument(
-        "--port", type=int, default=int(os.getenv("API_PORT", DEFAULT_PORT))
-    )
-    parser.add_argument(
-        "--num-workers", type=int, default=int(os.environ.get("NUM_WORKERS", 5))
-    )
-    parser.add_argument(
-        "--agent-manifest-path",
-        action="append",
-        type=pathlib.Path,
-        default=[os.getenv("AGENT_MANIFEST_PATH", "manifest.json")],
-    )
-    parser.add_argument("--agents-ref", default=os.getenv("AGENTS_REF", None))
-    parser.add_argument(
-        "--log-level", default=os.environ.get("NUM_WORKERS", logging.INFO)
-    )
-    return parser.parse_args()
-
-
 def start():
     try:
-        args = parse_args()
-        logging.basicConfig(level=args.log_level.upper())
-
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        load_agents(args.agents_ref, args.agent_manifest_path)
-        n_workers = args.num_workers
+        agents_ref = os.getenv("AGENTS_REF", None)
+        agent_manifest_path = os.getenv(
+            "AGENT_MANIFEST_PATH", DEFAULT_AGENT_MANIFEST_PATH
+        )
+        load_agents(agents_ref, agent_manifest_path)
+        n_workers = int(os.environ.get("NUM_WORKERS", DEFAULT_NUM_WORKERS))
 
         loop = asyncio.get_event_loop()
         loop.create_task(start_workers(n_workers))
@@ -93,8 +72,8 @@ def start():
         # use module import method to support reload argument
         config = uvicorn.Config(
             "agent_workflow_server.main:app",
-            host=args.host,
-            port=args.port,
+            host=os.getenv("API_HOST", DEFAULT_HOST) or DEFAULT_HOST,
+            port=int(os.getenv("API_PORT", DEFAULT_PORT)) or DEFAULT_PORT,
             loop="asyncio",
         )
         server = uvicorn.Server(config)

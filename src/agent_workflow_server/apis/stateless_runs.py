@@ -38,6 +38,7 @@ from agent_workflow_server.generated.models.run_wait_response_stateless import (
 from agent_workflow_server.generated.models.stream_event_payload import (
     StreamEventPayload,
 )
+from agent_workflow_server.generated.models.streaming_mode import StreamingMode
 from agent_workflow_server.services.runs import Runs
 from agent_workflow_server.services.validation import (
     InvalidFormatException,
@@ -55,6 +56,25 @@ async def _validate_run_create_stateless(
     if run_create_stateless.agent_id is None:
         """Pre-process the RunCreateStateless object to set the agent_id if not provided."""
         run_create_stateless.agent_id = get_default_agent().agent_id
+    if run_create_stateless.stream_mode is not None:
+        # Server only supports VALUES streaming at the moment.
+        if (
+            isinstance(run_create_stateless.stream_mode.actual_instance, List)
+            and StreamingMode.VALUES
+            not in run_create_stateless.stream_mode.actual_instance
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail='stream mode: "values" required',
+            )
+        elif (
+            not isinstance(run_create_stateless.stream_mode.actual_instance, List)
+            and StreamingMode.VALUES != run_create_stateless.stream_mode.actual_instance
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail='stream mode: "values" required',
+            )
     return run_create_stateless
 
 
