@@ -15,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.responses import JSONResponse
 from pydantic import Field, StrictBool, StrictStr
 from typing_extensions import Annotated
 
@@ -167,6 +168,22 @@ async def create_and_stream_stateless_run_output(
     """Create a stateless run and join its output stream. See &#39;GET /runs/{run_id}/stream&#39; for details on the return values."""
     raise HTTPException(status_code=500, detail="Not implemented")
 
+
+@router.options(
+  "/runs/wait",
+  responses={
+    204: {"description": "No Content"},
+  },
+  tags=["Stateless Runs"],
+  summary="CORS preflight for /runs/wait",
+)
+async def options_wait_for_stateless_run_output() -> JSONResponse:
+  """Handle CORS preflight request for /runs/wait."""
+  response = JSONResponse(content=None, status_code=status.HTTP_204_NO_CONTENT)
+  response.headers["Access-Control-Allow-Origin"] = "*"
+  response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+  response.headers["Access-Control-Allow-Headers"] = "*"
+  return response
 
 @router.post(
     "/runs/wait",
