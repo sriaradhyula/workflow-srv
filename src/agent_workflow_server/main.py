@@ -66,7 +66,12 @@ def start():
         load_agents(agents_ref, agent_manifest_path)
         n_workers = int(os.environ.get("NUM_WORKERS", DEFAULT_NUM_WORKERS))
 
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         loop.create_task(start_workers(n_workers))
 
         # use module import method to support reload argument
