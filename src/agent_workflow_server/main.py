@@ -72,8 +72,8 @@ def start():
         agent_manifest_path = os.getenv(
             "AGENT_MANIFEST_PATH", DEFAULT_AGENT_MANIFEST_PATH
         )
-        load_agents(agents_ref, agent_manifest_path)
-        n_workers = int(os.environ.get("NUM_WORKERS", DEFAULT_NUM_WORKERS))
+        load_agents(agents_ref, [agent_manifest_path])
+        n_workers = int(os.getenv("NUM_WORKERS", DEFAULT_NUM_WORKERS))
 
         try:
             loop = asyncio.get_running_loop()
