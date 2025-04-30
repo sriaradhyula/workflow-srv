@@ -24,12 +24,12 @@ from agent_workflow_server.generated.models.stream_event_payload import (
 from agent_workflow_server.generated.models.value_run_result_update import (
     ValueRunResultUpdate,
 )
+from agent_workflow_server.services.threads import Threads
 from agent_workflow_server.storage.models import Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
 from ..utils.tools import is_valid_uuid
 from .message import Message
-from .thread import get_thread
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class Runs:
 
         if search_request.metadata and len(search_request.metadata) > 0:
             for run in enumerate(runs):
-                thread = get_thread(run["thread_id"])
+                thread = Threads.get_thread_by_id(run["thread_id"])
                 if thread:
                     for key, value in search_request.metadata.items():
                         if (

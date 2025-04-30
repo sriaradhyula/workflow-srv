@@ -18,6 +18,8 @@ from agent_workflow_server.apis.authentication import (
     setup_api_key_auth,
 )
 from agent_workflow_server.apis.stateless_runs import router as StatelessRunsApiRouter
+from agent_workflow_server.apis.threads import router as ThreadsApiRouter
+from agent_workflow_server.apis.threads_runs import router as ThreadRunsApiRouter
 from agent_workflow_server.services.queue import start_workers
 
 load_dotenv(dotenv_path=find_dotenv(usecwd=True))
@@ -48,6 +50,16 @@ app.include_router(
     dependencies=[Depends(authentication_with_api_key)],
 )
 
+app.include_router(
+    router=ThreadsApiRouter,
+    dependencies=[Depends(authentication_with_api_key)],
+)
+
+app.include_router(
+    router=ThreadRunsApiRouter,
+    dependencies=[Depends(authentication_with_api_key)],
+)
+
 
 def signal_handler(sig, frame):
     logger.warning(f"Received {signal.Signals(sig).name}. Exiting...")
@@ -63,8 +75,8 @@ def start():
         agent_manifest_path = os.getenv(
             "AGENT_MANIFEST_PATH", DEFAULT_AGENT_MANIFEST_PATH
         )
-        load_agents(agents_ref, agent_manifest_path)
-        n_workers = int(os.environ.get("NUM_WORKERS", DEFAULT_NUM_WORKERS))
+        load_agents(agents_ref, [agent_manifest_path])
+        n_workers = int(os.getenv("NUM_WORKERS", DEFAULT_NUM_WORKERS))
 
         try:
             loop = asyncio.get_running_loop()
