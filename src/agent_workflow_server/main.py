@@ -9,6 +9,7 @@ import sys
 import uvicorn
 from dotenv import find_dotenv, load_dotenv
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from agent_workflow_server.agents.load import load_agents
 from agent_workflow_server.apis.agents import public_router as PublicAgentsApiRouter
@@ -58,6 +59,14 @@ app.include_router(
 app.include_router(
     router=ThreadRunsApiRouter,
     dependencies=[Depends(authentication_with_api_key)],
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ALLOWED_ORIGINS", "*").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

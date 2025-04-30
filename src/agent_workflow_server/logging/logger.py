@@ -14,5 +14,5 @@ handler.setFormatter(colorformatter)
 
 CustomLoggerHandler = handler
 
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=LOG_LEVEL, handlers=[CustomLoggerHandler], force=True)
