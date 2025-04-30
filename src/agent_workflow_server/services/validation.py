@@ -7,6 +7,9 @@ from typing import Any
 import jsonschema
 
 from agent_workflow_server.agents.load import AGENTS
+from agent_workflow_server.generated.models.run_create_stateful import (
+    RunCreateStateful,
+)
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless,
 )
@@ -52,7 +55,9 @@ def validate_output(run_id, agent_id: str, output: Any) -> None:
         )
 
 
-def validate_run_create(run_create: RunCreateStateless) -> RunCreateStateless:
+def validate_run_create(
+    run_create: RunCreateStateless | RunCreateStateful,
+) -> RunCreateStateless | RunCreateStateful:
     """Validate RunCreate input against agent's descriptor schema"""
     schemas = get_agent_schemas(run_create.agent_id)
     if schemas["input"] and not run_create.input:
