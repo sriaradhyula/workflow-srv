@@ -21,7 +21,7 @@ MOCK_RUN_EVENT_INTERRUPT = "__mock_interrupt__"
 MOCK_RUN_OUTPUT_INTERRUPT = {"message": "How can I help you?"}
 
 MOCK_RUN_INPUT_ERROR = {"message": "I don't feel too well."}
-MOCK_RUN_OUTPUT_ERROR = "error input: {\"message\": \"I don\'t feel too well.\"}"
+MOCK_RUN_OUTPUT_ERROR = 'error input: {"message": "I don\'t feel too well."}'
 
 MOCK_THREAD_ID = "3f1e2549-5799-4321-91ae-2a4881d55526"
 

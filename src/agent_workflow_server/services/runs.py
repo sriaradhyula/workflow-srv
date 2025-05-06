@@ -226,7 +226,9 @@ class Runs:
         return last_chunk
 
     @staticmethod
-    async def wait_for_output(run_id: str, timeout: float = None) -> tuple[ApiRun | None, Any]:
+    async def wait_for_output(
+        run_id: str, timeout: float = None
+    ) -> tuple[ApiRun | None, Any]:
         run = DB.get_run(run_id)
 
         if run is None:

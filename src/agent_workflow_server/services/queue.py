@@ -180,9 +180,7 @@ async def worker(worker_id: int):
 
             # FIXME: ACP spec does not currently include error messages
             # in streams
-            await Runs.Stream.publish(
-                run_id, Message(type="message", data={})
-            )
+            await Runs.Stream.publish(run_id, Message(type="message", data={}))
 
             await RUNS_QUEUE.put(run_id)  # Re-queue for retry
 

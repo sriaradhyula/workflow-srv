@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 from datetime import datetime
 from uuid import uuid4
 
-import json
 import pytest
 from pytest_mock import MockerFixture
 
@@ -21,11 +21,11 @@ from agent_workflow_server.storage.storage import DB
 from tests.mock import (
     MOCK_AGENT_ID,
     MOCK_RUN_INPUT,
+    MOCK_RUN_INPUT_ERROR,
     MOCK_RUN_INPUT_INTERRUPT,
     MOCK_RUN_OUTPUT,
-    MOCK_RUN_OUTPUT_INTERRUPT,
-    MOCK_RUN_INPUT_ERROR,
     MOCK_RUN_OUTPUT_ERROR,
+    MOCK_RUN_OUTPUT_INTERRUPT,
     MockAdapter,
 )
 
@@ -264,7 +264,7 @@ async def test_search_runs(
                     configurable={"mock-key": "mock-value"},
                 ),
             ),
-            "pending", # on live-stream "success" comes after the stream is closed.
+            "pending",  # on live-stream "success" comes after the stream is closed.
             MOCK_RUN_OUTPUT,
         ),
         (
@@ -305,19 +305,23 @@ async def test_invoke_stream(
         try:
             async for event in Runs.stream_events(run_id=new_run.run_id):
                 if event is None:
-                    break # Errors can generate None at the moment
+                    break  # Errors can generate None at the moment
                 elif event.actual_instance.type == "custom":
-                    assert False, f"unsupported stream event payload type: {event.actual_instance.type}"
+                    assert False, (
+                        f"unsupported stream event payload type: {event.actual_instance.type}"
+                    )
                 elif event.actual_instance.type == "values":
                     # Not canonical, but close enough.
-                    output = json.dumps(event.actual_instance.values,sort_keys=True)
-                    expected_json = json.dumps(expected_output,sort_keys=True)
+                    output = json.dumps(event.actual_instance.values, sort_keys=True)
+                    expected_json = json.dumps(expected_output, sort_keys=True)
 
                     assert event.actual_instance.run_id == new_run.run_id
                     assert output == expected_json
                     assert event.actual_instance.status == expected_status
                 else:
-                    assert False, f"unknown stream event payload type: {event.actual_instance.type}"
+                    assert False, (
+                        f"unknown stream event payload type: {event.actual_instance.type}"
+                    )
 
         except asyncio.TimeoutError:
             assert False
