@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 from uuid import uuid4
 
+import json
 import pytest
 from pytest_mock import MockerFixture
 
@@ -23,6 +24,8 @@ from tests.mock import (
     MOCK_RUN_INPUT_INTERRUPT,
     MOCK_RUN_OUTPUT,
     MOCK_RUN_OUTPUT_INTERRUPT,
+    MOCK_RUN_INPUT_ERROR,
+    MOCK_RUN_OUTPUT_ERROR,
     MockAdapter,
 )
 
@@ -48,6 +51,11 @@ from tests.mock import (
             ApiRunCreate(agent_id=MOCK_AGENT_ID, input=MOCK_RUN_INPUT_INTERRUPT),
             "interrupted",
             MOCK_RUN_OUTPUT_INTERRUPT,
+        ),
+        (
+            ApiRunCreate(agent_id=MOCK_AGENT_ID, input=MOCK_RUN_INPUT_ERROR),
+            "error",
+            MOCK_RUN_OUTPUT_ERROR,
         ),
     ],
 )
@@ -240,3 +248,84 @@ async def test_search_runs(
         # delete all previous runs to avoid count issues for other tests
         for run in Runs.get_all():
             Runs.delete(run.run_id)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "run_create_mock, expected_status, expected_output",
+    [
+        (
+            ApiRunCreate(
+                agent_id=MOCK_AGENT_ID,
+                input=MOCK_RUN_INPUT,
+                config=Config(
+                    tags=["test"],
+                    recursion_limit=3,
+                    configurable={"mock-key": "mock-value"},
+                ),
+            ),
+            "pending", # on live-stream "success" comes after the stream is closed.
+            MOCK_RUN_OUTPUT,
+        ),
+        (
+            ApiRunCreate(agent_id=MOCK_AGENT_ID, input=MOCK_RUN_INPUT_INTERRUPT),
+            "interrupted",
+            MOCK_RUN_OUTPUT_INTERRUPT,
+        ),
+        (
+            ApiRunCreate(agent_id=MOCK_AGENT_ID, input=MOCK_RUN_INPUT_ERROR),
+            "error",
+            # FIXME: ACP spec does not currently include error messages in streams
+            {},
+        ),
+    ],
+)
+async def test_invoke_stream(
+    mocker: MockerFixture,
+    run_create_mock: ApiRunCreate,
+    expected_status: RunStatus,
+    expected_output: dict,
+):
+    mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
+
+    try:
+        load_agents()
+
+        loop = asyncio.get_event_loop()
+        worker_task = loop.create_task(start_workers(1))
+
+        new_run = await Runs.put(run_create=run_create_mock)
+
+        assert isinstance(new_run, ApiRun)
+        assert new_run.creation.input == run_create_mock.input
+        assert new_run.agent_id == run_create_mock.agent_id
+        assert new_run.creation.agent_id == run_create_mock.agent_id
+        assert new_run.creation.config == run_create_mock.config
+
+        try:
+            async for event in Runs.stream_events(run_id=new_run.run_id):
+                if event is None:
+                    break # Errors can generate None at the moment
+                elif event.actual_instance.type == "custom":
+                    assert False, f"unsupported stream event payload type: {event.actual_instance.type}"
+                elif event.actual_instance.type == "values":
+                    # Not canonical, but close enough.
+                    output = json.dumps(event.actual_instance.values,sort_keys=True)
+                    expected_json = json.dumps(expected_output,sort_keys=True)
+
+                    assert event.actual_instance.run_id == new_run.run_id
+                    assert output == expected_json
+                    assert event.actual_instance.status == expected_status
+                else:
+                    assert False, f"unknown stream event payload type: {event.actual_instance.type}"
+
+        except asyncio.TimeoutError:
+            assert False
+        else:
+            assert True
+    finally:
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass

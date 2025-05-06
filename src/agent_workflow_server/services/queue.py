@@ -95,29 +95,22 @@ async def worker(worker_id: int):
 
             log_run(worker_id, run_id, "started")
 
-            try:
-                await Runs.Stream.subscribe(run_id)  # to create a queue
-                stream = stream_run(run)
-                last_message = None
-                async for message in stream:
-                    message.data = make_serializable(message.data)
-                    last_message = message
-                    if last_message.type == "interrupt":
-                        log_run(
-                            worker_id,
-                            run_id,
-                            "interrupted",
-                            message_data=json.dumps(message.data),
-                        )
-                        await Runs.Stream.publish(run_id, message)
-                        break
-                    else:
-                        await Runs.Stream.publish(run_id, message)
-            except Exception as error:
-                await Runs.Stream.publish(
-                    run_id, Message(type="message", data=(str(error)))
-                )
-                raise RunError(error)
+            await Runs.Stream.subscribe(run_id)  # to create a queue
+            stream = stream_run(run)
+            last_message = None
+            async for message in stream:
+                message.data = make_serializable(message.data)
+                last_message = message
+                if last_message.type == "interrupt":
+                    log_run(
+                        worker_id,
+                        run_id,
+                        "interrupted",
+                        message_data=json.dumps(message.data),
+                    )
+                    break
+                else:
+                    await Runs.Stream.publish(run_id, message)
 
             ended_at = datetime.now().timestamp()
 
@@ -149,9 +142,6 @@ async def worker(worker_id: int):
 
             except InvalidFormatException as error:
                 log_run(worker_id, run_id, "failed")
-                await Runs.Stream.publish(
-                    run_id, Message(type="message", data=str(error))
-                )
                 raise RunError(str(error))
 
         except AttemptsExceededError:
@@ -168,7 +158,7 @@ async def worker(worker_id: int):
             await Runs.set_status(run_id, "error")
             log_run(worker_id, run_id, "exeeded attempts")
 
-        except RunError as error:
+        except (RunError, Exception) as error:
             ended_at = datetime.now().timestamp()
             run_info.update(
                 {
@@ -186,6 +176,12 @@ async def worker(worker_id: int):
                 run_id,
                 "failed",
                 **{"error": error, **run_stats(run_info)},
+            )
+
+            # FIXME: ACP spec does not currently include error messages
+            # in streams
+            await Runs.Stream.publish(
+                run_id, Message(type="message", data={})
             )
 
             await RUNS_QUEUE.put(run_id)  # Re-queue for retry

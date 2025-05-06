@@ -50,7 +50,7 @@ class InMemoryDB(DBOperations):
         """Save the current state to file"""
         try:
             logger.debug(
-                "Runs: %d, Infos: %d, Outputs: %d",
+                "Runs: %d, Infos: %d, Outputs: %d, Threads: %d",
                 len(self._runs),
                 len(self._runs_info),
                 len(self._runs_output),
