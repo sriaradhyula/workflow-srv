@@ -42,10 +42,9 @@ from agent_workflow_server.generated.models.streaming_mode import StreamingMode
 from agent_workflow_server.services.runs import Runs
 from agent_workflow_server.services.validation import (
     InvalidFormatException,
+    validate_resume_run,
 )
-from agent_workflow_server.services.validation import (
-    validate_run_create as validate,
-)
+from agent_workflow_server.services.validation import validate_run_create as validate
 
 router = APIRouter()
 
@@ -105,6 +104,19 @@ async def _validate_run_create(
         )
 
 
+async def _validate_resume_run(run_id: str, body: Dict[str, Any]) -> None:
+    """Validate resume run input against agent's descriptor schema"""
+    try:
+        validate_resume_run(run_id, body)
+    except InvalidFormatException as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
     try:
         run, run_output = await Runs.wait_for_output(run_id)
@@ -122,10 +134,19 @@ async def _wait_and_return_run_output(run_id: str) -> RunWaitResponseStateless:
             output=RunOutput(RunResult(type="result", values=run_output)),
         )
     elif run.status == "interrupted":
+        try:
+            interrupt = Runs.Interrupts.get_last(run_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e),
+            )
         return RunWaitResponseStateless(
             run=run,
             output=RunOutput(
-                RunInterrupt(type="interrupt", interrupt={"default": run_output})
+                RunInterrupt(
+                    type="interrupt", interrupt={interrupt["name"]: run_output}
+                )
             ),
         )
     else:
@@ -324,6 +345,7 @@ async def get_stateless_run(
     tags=["Stateless Runs"],
     summary="Resume an interrupted Run",
     response_model_by_alias=True,
+    dependencies=[Depends(_validate_resume_run)],
 )
 async def resume_stateless_run(
     run_id: Annotated[StrictStr, Field(description="The ID of the run.")] = Path(

@@ -134,11 +134,17 @@ async def worker(worker_id: int):
                     "got message",
                     message_data=json.dumps(last_message.data),
                 )
-                validate_output(run_id, run["agent_id"], last_message.data)
+
+                # Validate only if not interrupt (implicticly validated by _insert_interrupt_name)
+                if last_message.type != "interrupt":
+                    validate_output(run_id, run["agent_id"], last_message.data)
+
                 DB.add_run_output(run_id, last_message.data)
                 if last_message.type == "interrupt":
                     interrupt = Interrupt(
-                        event=last_message.event, ai_data=last_message.data
+                        event=last_message.event,
+                        name=last_message.interrupt_name,
+                        ai_data=last_message.data,
                     )
                     DB.update_run(run_id, {"interrupt": interrupt})
                     await Runs.set_status(run_id, "interrupted")
