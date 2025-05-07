@@ -23,9 +23,11 @@ from tests.mock import (
     MOCK_RUN_INPUT,
     MOCK_RUN_INPUT_ERROR,
     MOCK_RUN_INPUT_INTERRUPT,
+    MOCK_RUN_INPUT_STREAM,
     MOCK_RUN_OUTPUT,
     MOCK_RUN_OUTPUT_ERROR,
     MOCK_RUN_OUTPUT_INTERRUPT,
+    MOCK_RUN_OUTPUT_STREAM,
     MockAdapter,
 )
 
@@ -278,13 +280,18 @@ async def test_search_runs(
             # FIXME: ACP spec does not currently include error messages in streams
             {},
         ),
+        (
+            ApiRunCreate(agent_id=MOCK_AGENT_ID, input=MOCK_RUN_INPUT_STREAM),
+            "pending",
+            MOCK_RUN_OUTPUT_STREAM,
+        ),
     ],
 )
 async def test_invoke_stream(
     mocker: MockerFixture,
     run_create_mock: ApiRunCreate,
     expected_status: RunStatus,
-    expected_output: dict,
+    expected_output: dict | list,
 ):
     mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
 
@@ -304,6 +311,11 @@ async def test_invoke_stream(
 
         try:
             async for event in Runs.stream_events(run_id=new_run.run_id):
+                if isinstance(expected_output, list):
+                    exp_output = expected_output.pop(0)
+                else:
+                    exp_output = expected_output
+
                 if event is None:
                     break  # Errors can generate None at the moment
                 elif event.actual_instance.type == "custom":
@@ -313,7 +325,7 @@ async def test_invoke_stream(
                 elif event.actual_instance.type == "values":
                     # Not canonical, but close enough.
                     output = json.dumps(event.actual_instance.values, sort_keys=True)
-                    expected_json = json.dumps(expected_output, sort_keys=True)
+                    expected_json = json.dumps(exp_output, sort_keys=True)
 
                     assert event.actual_instance.run_id == new_run.run_id
                     assert output == expected_json

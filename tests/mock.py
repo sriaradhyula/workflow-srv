@@ -16,6 +16,13 @@ MOCK_AGENT_ID = "3f1e2549-5799-4321-91ae-2a4881d55526"
 MOCK_RUN_INPUT = {"message": "What's the color of the sky?"}
 MOCK_RUN_OUTPUT = {"message": "The color of the sky is blue"}
 
+MOCK_RUN_INPUT_STREAM = {"message": "What's the color of the sky?"}
+MOCK_RUN_OUTPUT_STREAM = [
+    {"message": "The color of the sky is blue"},
+    {"message": "The color of the sky is not white"},
+    {"message": "The color of the sky is sky blue, in fact"},
+]
+
 MOCK_RUN_INPUT_INTERRUPT = {"message": "Please interrupt"}
 MOCK_RUN_EVENT_INTERRUPT = "__mock_interrupt__"
 MOCK_RUN_OUTPUT_INTERRUPT = {"message": "How can I help you?"}
@@ -46,6 +53,9 @@ class MockAgent(BaseAgent):
                 event=MOCK_RUN_EVENT_INTERRUPT,
                 data=MOCK_RUN_OUTPUT_INTERRUPT,
             )
+        elif run["input"] == MOCK_RUN_INPUT_STREAM:
+            async for data in MOCK_RUN_OUTPUT_STREAM:
+                yield Message(type="message", data=data)
         elif run["input"] == MOCK_RUN_INPUT_ERROR:
             raise ValueError("error input: " + json.dumps(run["input"]))
 

@@ -158,7 +158,7 @@ async def worker(worker_id: int):
             await Runs.set_status(run_id, "error")
             log_run(worker_id, run_id, "exeeded attempts")
 
-        except (RunError, Exception) as error:
+        except Exception as error:
             ended_at = datetime.now().timestamp()
             run_info.update(
                 {
