@@ -17,7 +17,7 @@ MOCK_RUN_OUTPUT = {"message": "The color of the sky is blue"}
 
 MOCK_RUN_INPUT_INTERRUPT = {"message": "Please interrupt"}
 MOCK_RUN_EVENT_INTERRUPT = "__mock_interrupt__"
-MOCK_RUN_OUTPUT_INTERRUPT = {"message": "How can I help you?"}
+MOCK_RUN_OUTPUT_INTERRUPT = {"interrupt_message": "How can I help you?"}
 
 MOCK_THREAD_ID = "3f1e2549-5799-4321-91ae-2a4881d55526"
 
