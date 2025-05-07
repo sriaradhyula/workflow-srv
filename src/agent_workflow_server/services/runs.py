@@ -25,6 +25,7 @@ from agent_workflow_server.generated.models.value_run_result_update import (
     ValueRunResultUpdate,
 )
 from agent_workflow_server.services.threads import Threads
+from agent_workflow_server.services.utils import check_run_is_interrupted
 from agent_workflow_server.storage.models import Interrupt, Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
@@ -182,12 +183,7 @@ class Runs:
     @staticmethod
     async def resume(run_id: str, user_input: Dict[str, Any]) -> ApiRun:
         run = DB.get_run(run_id)
-        if run is None:
-            raise ValueError("Run not found")
-        if run["status"] != "interrupted":
-            raise ValueError("Run is not in interrupted state")
-        if run.get("interrupt") is None:
-            raise ValueError(f"No interrupt found for run {run_id}")
+        check_run_is_interrupted(run)
 
         interrupt = run["interrupt"]
         interrupt["user_data"] = user_input
@@ -286,14 +282,9 @@ class Runs:
 
     class Interrupts:
         @staticmethod
-        def get_last(run_id: str) -> Optional[Interrupt]:
+        def get_last(run_id: str) -> Interrupt:
             run = DB.get_run(run_id)
-            if run is None:
-                raise ValueError(f"Run {run_id} not found")
-            if run["status"] != "interrupted":
-                raise ValueError("Run is not in interrupted state")
-            if run.get("interrupt") is None:
-                raise ValueError(f"No interrupt found for run {run_id}")
+            check_run_is_interrupted(run)
             return run["interrupt"]
 
     class Stream:
