@@ -37,7 +37,41 @@
             "interrupts": false,
             "callbacks": false
         },
-        "interrupts": []
+        "interrupts": [
+            {
+                "interrupt_type": "mock_interrupt",
+                "interrupt_payload": {
+                    "type": "object",
+                    "title": "Mock interrupt",
+                    "description": "A Mock interrupt",
+                    "properties": {
+                        "interrupt_message": {
+                            "title": "Question",
+                            "description": "Natural language question that is going to be asked by this agent",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "interrupt_message"
+                    ]
+                },
+                "resume_payload": {
+                    "type": "object",
+                    "title": "Mock interrupt answer",
+                    "description": "Answer to the mock interrupt",
+                    "properties": {
+                        "message": {
+                            "title": "Answer",
+                            "description": "Natural language answer to the question asked by this agent",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "message"
+                    ]
+                }
+            }
+        ]
     },
     "dependencies": [],
     "deployment": {

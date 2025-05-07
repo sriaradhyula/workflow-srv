@@ -11,6 +11,7 @@ class Interrupt(TypedDict):
     """Definition for an Interrupt message"""
 
     event: str
+    name: str
     ai_data: Any
     user_data: Optional[Any]
 

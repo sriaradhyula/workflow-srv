@@ -2,17 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 import jsonschema
 
 from agent_workflow_server.agents.load import AGENTS
+from agent_workflow_server.generated.models.agent_acp_spec_interrupts_inner import (
+    AgentACPSpecInterruptsInner,
+)
 from agent_workflow_server.generated.models.run_create_stateful import (
     RunCreateStateful,
 )
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless,
 )
+from agent_workflow_server.services.utils import check_run_is_interrupted
+from agent_workflow_server.storage.storage import DB
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +46,12 @@ def get_agent_schemas(agent_id: str):
         raise ValueError(f"Agent {agent_id} not found")
 
     specs = agent_info.manifest.specs
-    return {"input": specs.input, "output": specs.output, "config": specs.config}
+    return {
+        "input": specs.input,
+        "output": specs.output,
+        "config": specs.config,
+        "interrupts": specs.interrupts,
+    }
 
 
 def validate_output(run_id, agent_id: str, output: Any) -> None:
@@ -72,3 +82,24 @@ def validate_run_create(
         validate_against_schema(run_create.config.configurable, schemas["config"])
 
     return run_create
+
+
+def validate_resume_run(run_id: str, body: Dict[str, Any]):
+    run = DB.get_run(run_id)
+    check_run_is_interrupted(run)
+
+    interrupt_name = run["interrupt"]["name"]
+    interrupts_schemas: List[AgentACPSpecInterruptsInner] = get_agent_schemas(
+        run["agent_id"]
+    )["interrupts"]
+
+    # Get interrupt_schema given the interrupt_name
+    for interrupt_schema in interrupts_schemas:
+        if interrupt_schema.interrupt_type == interrupt_name:
+            break
+    else:
+        raise ValueError(f"Interrupt {interrupt_name} not found")
+
+    validate_against_schema(
+        body, interrupt_schema.resume_payload, "Resume payload not valid"
+    )
