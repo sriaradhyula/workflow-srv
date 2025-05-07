@@ -13,7 +13,7 @@ from fastapi import (
     Query,
     status,
 )
-from pydantic import Field, StrictInt, StrictStr
+from pydantic import Field, StrictStr
 from typing_extensions import Annotated
 
 from agent_workflow_server.agents.base import ThreadsNotSupportedError
@@ -161,7 +161,7 @@ async def get_thread_history(
     thread_id: Annotated[StrictStr, Field(description="The ID of the thread.")] = Path(
         ..., description="The ID of the thread."
     ),
-    limit: Optional[StrictInt] = Query(10, description="", alias="limit"),
+    limit: Optional[int] = Query(10, description="", alias="limit"),
     before: Optional[StrictStr] = Query(None, description="", alias="before"),
 ) -> List[ThreadState]:
     """Get all past states for a thread."""
@@ -223,4 +223,15 @@ async def search_threads(
     thread_search_request: ThreadSearchRequest = Body(None, description=""),
 ) -> List[Thread]:
     """Search for threads.  This endpoint also functions as the endpoint to list all threads."""
-    return await Threads.search(thread_search_request)
+    # Create filtes from metadata, values and status but only if they are not None
+    filters = {}
+    if thread_search_request.metadata:
+        filters["metadata"] = thread_search_request.metadata
+    if thread_search_request.values:
+        filters["values"] = thread_search_request.values
+    if thread_search_request.status:
+        filters["status"] = thread_search_request.status
+
+    return await Threads.search(
+        filters, thread_search_request.limit, thread_search_request.offset
+    )
