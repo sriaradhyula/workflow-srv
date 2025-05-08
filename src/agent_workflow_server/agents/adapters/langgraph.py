@@ -22,7 +22,10 @@ from agent_workflow_server.storage.models import Run
 
 class LangGraphAdapter(BaseAdapter):
     def load_agent(
-        self, agent: object, set_thread_persistance_flag: Optional[callable]
+        self,
+        agent: object,
+        manifest: dict,
+        set_thread_persistance_flag: Optional[callable],
     ) -> Optional[BaseAgent]:
         if isinstance(agent, Graph):
             return LangGraphAgent(agent.compile())
