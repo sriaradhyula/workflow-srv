@@ -10,6 +10,7 @@ from typing import Any, Dict, Hashable, List, Mapping, NamedTuple, Optional
 
 import agent_workflow_server.agents.adapters
 from agent_workflow_server.agents.oas_generator import generate_agent_oapi
+from agent_workflow_server.generated.manifest.models.agent_manifest import AgentManifest
 from agent_workflow_server.generated.models.agent import Agent
 from agent_workflow_server.generated.models.agent_acp_descriptor import (
     AgentACPDescriptor,
@@ -69,7 +70,9 @@ def _read_manifest(path: str):
                 )
             # print full path
             logger.info(f"Loaded Agent Manifest from {os.path.abspath(path)}")
-        return AgentACPDescriptor(**manifest_data), manifest_data
+        return AgentACPDescriptor.model_validate(
+            manifest_data
+        ), AgentManifest.model_validate(manifest_data)
     return None, None
 
 
@@ -135,7 +138,7 @@ Check that file path in 'AGENTS_REF' env variable is correct."""
 
         agent = None
         for adapter in ADAPTERS:
-            agent = adapter.load_agent(resolved, DB.set_persist_threads)
+            agent = adapter.load_agent(resolved, manifest, DB.set_persist_threads)
             if agent is not None:
                 break
         else:

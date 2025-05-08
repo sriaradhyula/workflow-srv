@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import inspect
-import json
 from typing import Any, Dict, Optional
 
 from llama_index.core.workflow import (
@@ -13,6 +12,7 @@ from llama_index.core.workflow.events import Event
 from llama_index.core.workflow.handler import WorkflowHandler
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
+from agent_workflow_server.generated.manifest.models.agent_manifest import AgentManifest
 from agent_workflow_server.services.message import Message
 from agent_workflow_server.storage.models import Run
 from agent_workflow_server.utils.tools import load_from_module
@@ -22,7 +22,7 @@ class LlamaIndexAdapter(BaseAdapter):
     def load_agent(
         self,
         agent: object,
-        manifest: dict,
+        manifest: AgentManifest,
         set_thread_persistance_flag: Optional[callable],
     ) -> Optional[BaseAgent]:
         if callable(agent) and len(inspect.signature(agent).parameters) == 0:
@@ -41,7 +41,7 @@ class InterruptInfo:
 
 
 class LlamaIndexAgent(BaseAgent):
-    def __init__(self, agent: Workflow, manifest: dict):
+    def __init__(self, agent: Workflow, manifest: AgentManifest):
         self.agent = agent
         self.manifest = manifest
         self.contexts: Dict[str, Dict] = {}
@@ -49,23 +49,23 @@ class LlamaIndexAgent(BaseAgent):
             manifest
         )
 
-    def _load_interrupts_dict(self, manifest: dict) -> Dict[str, InterruptInfo]:
-        interrupts_info: dict = manifest["deployment"]["deployment_options"][0][
-            "framework_config"
-        ].get("interrupts", {})
+    def _load_interrupts_dict(
+        self, manifest: AgentManifest
+    ) -> Dict[str, InterruptInfo]:
+        interrupts_info = manifest.deployment.deployment_options[
+            0
+        ].actual_instance.framework_config.actual_instance.interrupts
         interrupts_dict = {}
         for interrupt_name, refs in interrupts_info.items():
-            interrupt_module_str, interrupt_obj_str = refs["interrupt_ref"].split(
-                ":", 1
-            )
-            resume_module_str, resume_obj_str = refs["interrupt_ref"].split(":", 1)
+            interrupt_module_str, interrupt_obj_str = refs.interrupt_ref.split(":", 1)
+            resume_module_str, resume_obj_str = refs.resume_ref.split(":", 1)
             interrupt_event = load_from_module(interrupt_module_str, interrupt_obj_str)
             resume_event = load_from_module(resume_module_str, resume_obj_str)
-            if not isinstance(interrupt_event, Event):
+            if not issubclass(interrupt_event, Event):
                 raise ValueError(
                     f"Interrupt event {interrupt_event} is not a valid Event class."
                 )
-            if not isinstance(resume_event, Event):
+            if not issubclass(resume_event, Event):
                 raise ValueError(
                     f"Resume event {resume_event} is not a valid Event class."
                 )
@@ -96,18 +96,18 @@ class LlamaIndexAgent(BaseAgent):
             user_data = run["interrupt"]["user_data"]
             interrupt_name = run["interrupt"]["name"]
             event = self.interrupts_dict[interrupt_name].resume_event
-            handler.ctx.send_event(json.loads(user_data), event)
+            handler.ctx.send_event(event.model_validate(user_data))
 
         async for event in handler.stream_events():
             self.contexts[run["thread_id"]] = handler.ctx.to_dict()
             if self._is_known_interrupt(event):
                 # Send the interrupt
                 await handler.cancel_run()
-                yield Message(type="interrupt", data=event)
+                yield Message(type="interrupt", data=event.model_dump(mode="json"))
             else:
                 yield Message(
                     type="message",
-                    data=event,
+                    data=event.model_dump(mode="json"),
                 )
         final_result = await handler
         self.contexts[run["thread_id"]] = handler.ctx.to_dict()
