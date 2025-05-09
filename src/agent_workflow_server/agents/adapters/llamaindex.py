@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import inspect
-from typing import Dict, Optional
+from typing import Dict, List, Optional
+from uuid import UUID, uuid4
 
 from llama_index.core.workflow import (
     Context,
@@ -10,10 +11,17 @@ from llama_index.core.workflow import (
     InputRequiredEvent,
     Workflow,
 )
+from pydantic import BaseModel
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 from agent_workflow_server.services.message import Message
+from agent_workflow_server.services.thread_state import ThreadState
 from agent_workflow_server.storage.models import Run
+
+
+class LlamaIndexCheckpoint(BaseModel):
+    checkpoint_id: UUID
+    context: Dict
 
 
 class LlamaIndexAdapter(BaseAdapter):
@@ -32,14 +40,17 @@ class LlamaIndexAdapter(BaseAdapter):
 class LlamaIndexAgent(BaseAgent):
     def __init__(self, agent: Workflow):
         self.agent = agent
-        self.contexts: Dict[str, Dict] = {}
+        self.checkpoints: Dict[str, List[LlamaIndexCheckpoint]] = {}
 
     async def astream(self, run: Run):
         input = run["input"]
-        ctx_data = self.contexts.get(run["thread_id"])
+        checkpoints = self.checkpoints.get(run["thread_id"])
+        last_checkpoint = checkpoints[-1] if checkpoints else None
 
         handler = self.agent.run(
-            ctx=Context.from_dict(self.agent, ctx_data) if ctx_data else None,
+            ctx=Context.from_dict(self.agent, last_checkpoint.context)
+            if last_checkpoint and last_checkpoint.context
+            else None,
             **input,
         )
         if handler.ctx is None:
@@ -59,7 +70,15 @@ class LlamaIndexAgent(BaseAgent):
             handler.ctx.send_event(HumanResponseEvent(response=user_data))
 
         async for event in handler.stream_events():
-            self.contexts[run["thread_id"]] = handler.ctx.to_dict()
+            if checkpoints is None:
+                checkpoints = []
+
+            checkpoints.append(
+                LlamaIndexCheckpoint(
+                    checkpoint_id=uuid4(),
+                    context=handler.ctx.to_dict(),
+                )
+            )
             if isinstance(event, InputRequiredEvent):
                 # Send the interrupt
                 await handler.cancel_run()
@@ -71,17 +90,81 @@ class LlamaIndexAgent(BaseAgent):
                     data=event,
                 )
         final_result = await handler
-        self.contexts[run["thread_id"]] = handler.ctx.to_dict()
+        checkpoints.append(
+            LlamaIndexCheckpoint(
+                checkpoint_id=uuid4(),
+                context=handler.ctx.to_dict(),
+            )
+        )
+        self.checkpoints[run["thread_id"]] = checkpoints
         yield Message(
             type="message",
             data=final_result,
         )
 
     async def get_agent_state(self, thread_id):
-        pass
+        checkpoints = self.checkpoints.get(thread_id)
+        # If there are no checkpoints, return None
+        if not checkpoints:
+            return None
+
+        # Get the last checkpoint
+        last_checkpoint = checkpoints[-1]
+        # If the last checkpoint has a context, return its values
+        return ThreadState(
+            values=last_checkpoint.context,
+            checkpoint_id=last_checkpoint.checkpoint_id,
+        )
 
     async def get_history(self, thread_id, limit, before):
-        pass
+        checkpoints = self.checkpoints.get(thread_id)
+        # If there are no checkpoints, return empty list
+        if not checkpoints:
+            return []
+
+        # If before is not None, filter the checkpoints
+        if before:
+            checkpoints = [
+                checkpoint
+                for checkpoint in checkpoints
+                if checkpoint.checkpoint_id < before
+            ]
+        # If limit is not None, limit the number of checkpoints
+        if limit:
+            checkpoints = checkpoints[:limit]
+
+        # Convert the checkpoints to a list of ThreadState objects
+        history = [
+            ThreadState(
+                values=checkpoint.context, checkpoint_id=str(checkpoint.checkpoint_id)
+            )
+            for checkpoint in checkpoints
+        ]
+
+        return history
 
     async def update_agent_state(self, thread_id, state):
-        pass
+        # Check is state value can be converted to a Context
+        try:
+            ctx = Context.from_dict(self.agent, state["values"])
+        except Exception as e:
+            raise ValueError(
+                f"Failed to update agent state for thread {thread_id}: {e}"
+            )
+
+        # Get the checkpoints for the thread
+        checkpoints = self.checkpoints.get(thread_id)
+        # If there are no checkpoints, create a new list
+        if checkpoints is None:
+            checkpoints = []
+
+        # Append the new checkpoint to the list of checkpoints
+        checkpoints.append(
+            LlamaIndexCheckpoint(
+                checkpoint_id=uuid4(),
+                context=ctx.to_dict(),
+            )
+        )
+        self.checkpoints[thread_id] = checkpoints
+
+        return await self.get_agent_state(thread_id)
