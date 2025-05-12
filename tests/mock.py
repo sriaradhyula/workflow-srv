@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 from typing import AsyncGenerator, List, Optional
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
@@ -16,9 +17,19 @@ MOCK_AGENT_ID = "3f1e2549-5799-4321-91ae-2a4881d55526"
 MOCK_RUN_INPUT = {"message": "What's the color of the sky?"}
 MOCK_RUN_OUTPUT = {"message": "The color of the sky is blue"}
 
+MOCK_RUN_INPUT_STREAM = {"message": "What's the color of the sky?"}
+MOCK_RUN_OUTPUT_STREAM = [
+    {"message": "The color of the sky is blue"},
+    {"message": "The color of the sky is not white"},
+    {"message": "The color of the sky is sky blue, in fact"},
+]
+
 MOCK_RUN_INPUT_INTERRUPT = {"message": "Please interrupt"}
 MOCK_RUN_EVENT_INTERRUPT = "__mock_interrupt__"
 MOCK_RUN_OUTPUT_INTERRUPT = {"interrupt_message": "How can I help you?"}
+
+MOCK_RUN_INPUT_ERROR = {"message": "I don't feel too well."}
+MOCK_RUN_OUTPUT_ERROR = 'error input: {"message": "I don\'t feel too well."}'
 
 MOCK_THREAD_ID = "3f1e2549-5799-4321-91ae-2a4881d55526"
 
@@ -37,13 +48,17 @@ class MockAgent(BaseAgent):
         ):
             await asyncio.sleep(3)
             yield Message(type="message", data=MOCK_RUN_OUTPUT)
-            return
-        if run["input"] == MOCK_RUN_INPUT_INTERRUPT:
+        elif run["input"] == MOCK_RUN_INPUT_INTERRUPT:
             yield Message(
                 type="interrupt",
                 event=MOCK_RUN_EVENT_INTERRUPT,
                 data=MOCK_RUN_OUTPUT_INTERRUPT,
             )
+        elif run["input"] == MOCK_RUN_INPUT_STREAM:
+            async for data in MOCK_RUN_OUTPUT_STREAM:
+                yield Message(type="message", data=data)
+        elif run["input"] == MOCK_RUN_INPUT_ERROR:
+            raise ValueError("error input: " + json.dumps(run["input"]))
 
     # Mock get_agent_state
     async def get_agent_state(self, thread_id: str) -> Optional[ThreadState]:

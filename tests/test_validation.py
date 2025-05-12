@@ -403,6 +403,7 @@ def test_validate_run_create_complex_schema_invalid():
         with pytest.raises(InvalidFormatException):
             validate_run_create(run_create)
 
+
 def test_validate_run_create_complex_schema_additional_properties_fail():
     """Test validation with complex nested structures and array validations"""
     # Complex run with nested structures and arrays
@@ -410,20 +411,10 @@ def test_validate_run_create_complex_schema_additional_properties_fail():
         agent_id="complex-agent",
         input={
             "echo_input": {
-                "messages": [
-                    {
-                        "type": "human",
-                        "content": "Hello I'm a developer"
-                    }
-                ]
+                "messages": [{"type": "human", "content": "Hello I'm a developer"}]
             }
         },
-        config={
-            "configurable": {
-                "to_upper": "false",
-                "to_lower": "false"
-                }
-        },
+        config={"configurable": {"to_upper": "false", "to_lower": "false"}},
     )
     complex_input_schema = {
         "$defs": {
@@ -431,51 +422,37 @@ def test_validate_run_create_complex_schema_additional_properties_fail():
                 "properties": {
                     "type": {
                         "$ref": "#/$defs/Type",
-                        "description": "indicates the originator of the message, a human or an assistant"
-                        },
+                        "description": "indicates the originator of the message, a human or an assistant",
+                    },
                     "content": {
                         "description": "the content of the message",
                         "title": "Content",
-                        "type": "string"
-                        }
+                        "type": "string",
+                    },
                 },
-                "required": [
-                    "type",
-                    "content"
-                ],
+                "required": ["type", "content"],
                 "title": "Message",
-                "type": "object"
+                "type": "object",
             },
             "Type": {
-                "enum": [
-                    "human",
-                    "assistant",
-                    "ai"
-                ],
+                "enum": ["human", "assistant", "ai"],
                 "title": "Type",
-                "type": "string"
-            }
+                "type": "string",
+            },
         },
         "properties": {
             "message": {
                 "anyOf": [
-                    {
-                    "items": {
-                        "$ref": "#/$defs/Message"
-                    },
-                    "type": "array"
-                    },
-                    {
-                    "type": "null"
-                    }
+                    {"items": {"$ref": "#/$defs/Message"}, "type": "array"},
+                    {"type": "null"},
                 ],
-            "default": "null",
-            "title": "Messages"
+                "default": "null",
+                "title": "Messages",
             }
         },
         "additionalProperties": False,
         "title": "InputState",
-        "type": "object"
+        "type": "object",
     }
 
     with mock.patch(
