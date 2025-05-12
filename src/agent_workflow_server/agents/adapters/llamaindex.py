@@ -10,6 +10,7 @@ from llama_index.core.workflow import (
     Workflow,
 )
 from llama_index.core.workflow.events import Event
+from llama_index.core.workflow.handler import WorkflowHandler
 from pydantic import BaseModel
 
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
@@ -93,7 +94,7 @@ class LlamaIndexAgent(BaseAgent):
         checkpoints = self.checkpoints.get(run["thread_id"])
         last_checkpoint = checkpoints[-1] if checkpoints else None
 
-        handler = self.agent.run(
+        handler: WorkflowHandler = self.agent.run(
             ctx=Context.from_dict(self.agent, last_checkpoint.context)
             if last_checkpoint and last_checkpoint.context
             else None,
