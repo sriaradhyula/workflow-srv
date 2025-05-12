@@ -15,6 +15,9 @@
 """  # noqa: E501
 
 
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 from inspect import getfullargspec
 import json
@@ -128,7 +131,7 @@ class ContentOneOfInner(BaseModel):
             return self.actual_instance.to_json()
         else:
             return json.dumps(self.actual_instance)
-    
+
     @model_serializer()
     def to_dict(self) -> Dict:
         """Returns the dict representation of the actual instance"""

@@ -15,6 +15,9 @@
 """  # noqa: E501
 
 
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 from inspect import getfullargspec
 import json

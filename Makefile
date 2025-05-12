@@ -69,7 +69,11 @@ generate-manifest: clean-manifest
 	mv $(OUTPUT_DIR_TMP)/$(MANIFEST_OUTPUT_DIR)/models $(MANIFEST_OUTPUT_DIR)
 	rm -rf $(OUTPUT_DIR_TMP)
 
-generate: generate-api generate-manifest	
+generate: generate-api generate-manifest add-copyright
+
+add-copyright:
+	find $(OUTPUT_DIR) -type f -name '*.py' -exec sh -c \
+		'cat copyright.txt "{}" > tmpfile && mv tmpfile "{}"' \;
 
 # Install dependencies and run server
 run:
