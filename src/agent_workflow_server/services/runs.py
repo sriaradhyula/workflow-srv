@@ -9,6 +9,8 @@ from itertools import islice
 from typing import Any, AsyncGenerator, AsyncIterator, Dict, List, Optional
 from uuid import uuid4
 
+import httpx
+
 from agent_workflow_server.generated.models.run_create_stateless import (
     RunCreateStateless as ApiRunCreate,
 )
@@ -29,7 +31,7 @@ from agent_workflow_server.services.utils import check_run_is_interrupted
 from agent_workflow_server.storage.models import Interrupt, Run, RunInfo, RunStatus
 from agent_workflow_server.storage.storage import DB
 
-from ..utils.tools import is_valid_uuid
+from ..utils.tools import is_valid_url, is_valid_uuid
 from .message import Message
 
 logger = logging.getLogger(__name__)
@@ -52,7 +54,8 @@ def _make_run(run_create: ApiRunCreate) -> Run:
 
     if not is_valid_uuid(run_create.agent_id):
         raise ValueError(f'agent_id "{run_create.agent_id}" is not a valid UUID')
-
+    if run_create.webhook and not is_valid_url(run_create.webhook):
+        raise ValueError(f'webhook "{run_create.webhook}" is not a valid URL')
     return {
         "run_id": str(uuid4()),
         "agent_id": run_create.agent_id,
@@ -60,6 +63,7 @@ def _make_run(run_create: ApiRunCreate) -> Run:
         "input": run_create.input,
         "config": run_create.config.model_dump() if run_create.config else None,
         "metadata": run_create.metadata,
+        "webhook": run_create.webhook,
         "created_at": curr_time,
         "updated_at": curr_time,
         "status": "pending",
@@ -83,7 +87,7 @@ def _to_api_model(run: Run) -> ApiRun:
             input=run["input"],
             metadata=run["metadata"],
             config=run["config"],
-            webhook=None,  # TODO
+            webhook=run["webhook"],
         ),
         run_id=run["run_id"],
         agent_id=run["agent_id"],
@@ -92,6 +96,33 @@ def _to_api_model(run: Run) -> ApiRun:
         updated_at=run["updated_at"],
         status=run["status"],
     )
+
+
+async def _call_webhook(run: Run) -> None:
+    """
+    Call the webhook URL with the Run data.
+
+    Args:
+        run (Run): The Run to send to the webhook.
+    """
+    if not run["webhook"]:
+        return
+
+    try:
+        run_data = _to_api_model(run).model_dump_json(by_alias=True, exclude_unset=True)
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                run["webhook"],
+                data=run_data,
+                headers={"Content-Type": "application/json"},
+            )
+
+        response.raise_for_status()
+
+        logger.info(f"Webhook called successfully for run {run['run_id']}")
+    except httpx.RequestError as e:
+        logger.error(f"Error calling webhook for run {run['run_id']}: {e}")
 
 
 class StreamManager:
@@ -201,7 +232,8 @@ class Runs:
         if not run:
             raise Exception("Run not found")
 
-        DB.update_run_status(run_id, status)
+        run = DB.update_run_status(run_id, status)
+        await _call_webhook(run)
 
         if status != "pending":
             async with cvs_pending_run[run_id]:

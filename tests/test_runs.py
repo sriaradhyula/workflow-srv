@@ -45,6 +45,15 @@ from tests.mock import (
                     recursion_limit=3,
                     configurable={"mock-key": "mock-value"},
                 ),
+                webhook="http://some-host:8000/webhook",
+            ),
+            "success",
+            MOCK_RUN_OUTPUT,
+        ),
+        (
+            ApiRunCreate(
+                agent_id=MOCK_AGENT_ID,
+                input=MOCK_RUN_INPUT,
             ),
             "success",
             MOCK_RUN_OUTPUT,
@@ -90,7 +99,9 @@ async def test_invoke(
         assert run.run_id == new_run.run_id
         assert run.agent_id == run_create_mock.agent_id
         assert run.creation.agent_id == run_create_mock.agent_id
+        assert run.creation.input == run_create_mock.input
         assert run.creation.config == run_create_mock.config
+        assert run.creation.webhook == run_create_mock.webhook
         assert output == expected_output
     finally:
         worker_task.cancel()
@@ -158,6 +169,7 @@ def init_test_search_runs(
             "input": {},
             "config": None,
             "metadata": None,
+            "webhook": None,
             "created_at": datetime.now(),
             "updated_at": datetime.now(),
             "status": status[i],
