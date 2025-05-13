@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import json
 import logging
 from collections import defaultdict
 from datetime import datetime
@@ -55,7 +54,7 @@ def _make_run(run_create: ApiRunCreate) -> Run:
 
     if not is_valid_uuid(run_create.agent_id):
         raise ValueError(f'agent_id "{run_create.agent_id}" is not a valid UUID')
-    if not is_valid_url(run_create.webhook):
+    if run_create.webhook and not is_valid_url(run_create.webhook):
         raise ValueError(f'webhook "{run_create.webhook}" is not a valid URL')
     return {
         "run_id": str(uuid4()),
@@ -110,7 +109,7 @@ async def _call_webhook(run: Run) -> None:
         return
 
     try:
-        run_data = json.dumps(_to_api_model(run))
+        run_data = _to_api_model(run).model_dump_json(by_alias=True, exclude_unset=True)
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -233,7 +232,7 @@ class Runs:
         if not run:
             raise Exception("Run not found")
 
-        DB.update_run_status(run_id, status)
+        run = DB.update_run_status(run_id, status)
         await _call_webhook(run)
 
         if status != "pending":

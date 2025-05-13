@@ -82,7 +82,7 @@ class InMemoryDB(DBOperations):
                 data = pickle.load(f)
 
             logger.debug(
-                "Processing state: %d runs, %d runs_info records, %d runs_output",
+                "Processing state: %d runs, %d runs_info records, %d runs_output, %d threads",
                 len(data.get("runs", {})),
                 len(data.get("runs_info", {})),
                 len(data.get("runs_output", {})),
