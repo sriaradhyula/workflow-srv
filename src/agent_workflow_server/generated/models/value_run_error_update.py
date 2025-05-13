@@ -23,25 +23,31 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
-from agent_workflow_server.generated.models.thread_status import ThreadStatus
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List
+from agent_workflow_server.generated.models.run_status import RunStatus
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class ThreadSearchRequest(BaseModel):
+class ValueRunErrorUpdate(BaseModel):
     """
-    Payload for listing threads.
+    Partial result provided as value through streaming.
     """ # noqa: E501
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Matches all threads for which metadata has  keys and values equal to those specified in this object.")
-    values: Optional[Dict[str, Any]] = Field(default=None, description="State values to filter on.")
-    status: Optional[ThreadStatus] = None
-    limit: Optional[Annotated[int, Field(le=1000, strict=True, ge=1)]] = Field(default=10, description="Maximum number to return.")
-    offset: Optional[Annotated[int, Field(strict=True, ge=0)]] = Field(default=0, description="Offset to start from.")
-    __properties: ClassVar[List[str]] = ["metadata", "values", "status", "limit", "offset"]
+    type: StrictStr
+    run_id: StrictStr = Field(description="The ID of the run.")
+    errcode: StrictInt = Field(description="code of the error")
+    description: StrictStr = Field(description="description of the error")
+    status: RunStatus = Field(description="Status of the Run when this result was generated. This is particularly useful when this data structure is used for streaming results. As the server can indicate an interrupt or an error condition while streaming the result.")
+    __properties: ClassVar[List[str]] = ["type", "run_id", "errcode", "description", "status"]
+
+    @field_validator('type')
+    def type_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in ('error',):
+            raise ValueError("must be one of enum values ('error')")
+        return value
 
     model_config = {
         "populate_by_name": True,
@@ -61,7 +67,7 @@ class ThreadSearchRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of ThreadSearchRequest from a JSON string"""
+        """Create an instance of ValueRunErrorUpdate from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -84,7 +90,7 @@ class ThreadSearchRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of ThreadSearchRequest from a dict"""
+        """Create an instance of ValueRunErrorUpdate from a dict"""
         if obj is None:
             return None
 
@@ -92,11 +98,11 @@ class ThreadSearchRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "metadata": obj.get("metadata"),
-            "values": obj.get("values"),
-            "status": obj.get("status"),
-            "limit": obj.get("limit") if obj.get("limit") is not None else 10,
-            "offset": obj.get("offset") if obj.get("offset") is not None else 0
+            "type": obj.get("type"),
+            "run_id": obj.get("run_id"),
+            "errcode": obj.get("errcode"),
+            "description": obj.get("description"),
+            "status": obj.get("status")
         })
         return _obj
 
