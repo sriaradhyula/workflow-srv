@@ -31,6 +31,7 @@ class Run(TypedDict):
     input: Optional[Dict[str, Any]]
     config: Optional[Config]
     metadata: Optional[Dict[str, Any]]
+    webhook: Optional[str]
     created_at: datetime
     updated_at: datetime
     status: RunStatus

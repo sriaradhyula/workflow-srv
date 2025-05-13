@@ -5,6 +5,7 @@ import importlib
 import uuid
 from enum import Enum
 from typing import Any
+from urllib.parse import urlparse
 
 from pydantic import BaseModel
 
@@ -14,6 +15,15 @@ def is_valid_uuid(val):
         uuid.UUID(str(val))
         return True
     except ValueError:
+        return False
+
+
+def is_valid_url(val):
+    try:
+        parsed = urlparse(val)
+        # Check if the URL has a scheme and netloc
+        return bool(parsed.scheme) and bool(parsed.netloc)
+    except Exception:
         return False
 
 
