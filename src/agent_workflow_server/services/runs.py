@@ -105,7 +105,7 @@ async def _call_webhook(run: Run) -> None:
     Args:
         run (Run): The Run to send to the webhook.
     """
-    if not run["webhook"]:
+    if not run.get("webhook"):
         return
 
     try:
