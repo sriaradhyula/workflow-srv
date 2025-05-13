@@ -65,6 +65,8 @@ class LlamaIndexAgent(BaseAgent):
             0
         ].actual_instance.framework_config.actual_instance.interrupts
         interrupts_dict = {}
+        if not interrupts_info:
+            return {}
         for interrupt_name, refs in interrupts_info.items():
             interrupt_module_str, interrupt_obj_str = refs.interrupt_ref.split(":", 1)
             resume_module_str, resume_obj_str = refs.resume_ref.split(":", 1)
