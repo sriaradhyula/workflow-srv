@@ -332,7 +332,7 @@ class Runs:
                         values=msg_data,
                     )
                 )
-            else:
+            elif run_status == "error":
                 yield StreamEventPayload(
                     ValueRunErrorUpdate(
                         type="error",
@@ -343,6 +343,8 @@ class Runs:
                         errcode=0,
                     )
                 )
+            else:
+                raise ValueError(f"Run status {run_status} unknown")
 
     class Interrupts:
         @staticmethod
