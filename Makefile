@@ -81,6 +81,8 @@ run:
 	poetry run server
 
 test:
+	poetry install
+	if [ -n "${AGWS_STORAGE_PATH}" ]; then rm "${AGWS_STORAGE_PATH}" ; elif [ -r "agws_storage.pkl" ]; then rm "agws_storage.pkl" ; fi
 	poetry run pytest
 
 format:
