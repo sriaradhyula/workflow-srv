@@ -28,7 +28,11 @@ from tests.mock import (
     MOCK_RUN_OUTPUT_ERROR,
     MOCK_RUN_OUTPUT_INTERRUPT,
     MOCK_RUN_OUTPUT_STREAM,
+    MOCK_WEBSERVER_DEFAULT_HOST,
+    MOCK_WEBSERVER_DEFAULT_PORT,
+    MOCK_WEBSERVER_WEBHOOK_PATH,
     MockAdapter,
+    TestWebServer,
 )
 
 
@@ -45,7 +49,7 @@ from tests.mock import (
                     recursion_limit=3,
                     configurable={"mock-key": "mock-value"},
                 ),
-                webhook="http://some-host:8000/webhook",
+                webhook=f"http://{MOCK_WEBSERVER_DEFAULT_HOST}:{MOCK_WEBSERVER_DEFAULT_PORT}/{MOCK_WEBSERVER_WEBHOOK_PATH}",
             ),
             "success",
             MOCK_RUN_OUTPUT,
@@ -76,6 +80,14 @@ async def test_invoke(
     expected_status: RunStatus,
     expected_output: dict,
 ):
+    if run_create_mock.webhook:
+        mock_server = TestWebServer(
+            host=MOCK_WEBSERVER_DEFAULT_HOST,
+            port=MOCK_WEBSERVER_DEFAULT_PORT,
+            path=MOCK_WEBSERVER_WEBHOOK_PATH,
+        )
+        await mock_server.start()
+
     mocker.patch("agent_workflow_server.agents.load.ADAPTERS", [MockAdapter()])
 
     try:
@@ -103,8 +115,17 @@ async def test_invoke(
         assert run.creation.config == run_create_mock.config
         assert run.creation.webhook == run_create_mock.webhook
         assert output == expected_output
+
+        # Check if the webhook was called with the expected payload
+        if run_create_mock.webhook:
+            assert mock_server.webhook_payload.decode("utf-8") == run.model_dump_json(
+                by_alias=True, exclude_unset=True
+            )
+
     finally:
         worker_task.cancel()
+        if run_create_mock.webhook and mock_server:
+            await mock_server.stop()
         try:
             await worker_task
         except asyncio.CancelledError:

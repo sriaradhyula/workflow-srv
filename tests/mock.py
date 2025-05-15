@@ -5,6 +5,8 @@ import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
 
+from aiohttp import web
+
 from agent_workflow_server.agents.base import BaseAdapter, BaseAgent
 from agent_workflow_server.generated.manifest.models.agent_manifest import AgentManifest
 from agent_workflow_server.services.message import Message
@@ -105,3 +107,44 @@ class MockAdapter(BaseAdapter):
 
 
 mock_agent = MockAgentImpl()
+
+
+MOCK_WEBSERVER_DEFAULT_PORT = 9753
+MOCK_WEBSERVER_DEFAULT_HOST = "127.0.0.1"
+MOCK_WEBSERVER_WEBHOOK_PATH = "webhook"
+
+
+class TestWebServer:
+    def __init__(self, host: str, port: int, path: str):
+        self.host = host
+        self.port = port
+        self.path = "/" + path.strip("/")
+        self.webhook_payload = None
+        self._runner = None
+        self._site = None
+        self._app = web.Application()
+        self._app.router.add_post(self.path, self._webhook_handler)
+        self._server_task = None
+
+    async def _webhook_handler(self, request: web.Request) -> web.Response:
+        self.webhook_payload = await request.read()
+        return web.Response(status=200)
+
+    async def start(self):
+        self._runner = web.AppRunner(self._app)
+        await self._runner.setup()
+        self._site = web.TCPSite(self._runner, self.host, self.port)
+        await self._site.start()
+
+    async def stop(self):
+        if self._site:
+            await self._site.stop()
+        if self._runner:
+            await self._runner.cleanup()
+
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.stop()
