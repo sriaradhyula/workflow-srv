@@ -120,7 +120,7 @@ async def _call_webhook(run: Run) -> None:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 run["webhook"],
-                data=run_data,
+                content=run_data,
                 headers={"Content-Type": "application/json"},
             )
 
