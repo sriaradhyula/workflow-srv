@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, List
 
 import jsonschema
 
@@ -32,6 +32,19 @@ def validate_against_schema(
     instance: Any, schema: dict, error_prefix: str = ""
 ) -> None:
     """Validate an instance against a JSON schema"""
+    # Convert Pydantic models to dict if needed
+    if hasattr(instance, "model_dump"):
+        # For Pydantic v2
+        instance = instance.model_dump()
+    elif hasattr(instance, "dict"):
+        # For Pydantic v1
+        instance = instance.dict()
+    elif hasattr(instance, "actual_instance") and isinstance(
+        instance.actual_instance, dict
+    ):
+        # This is a workaround for the Pydantic v1 issue where the instance is wrapped
+        instance = instance.actual_instance
+
     try:
         jsonschema.validate(instance=instance, schema=schema)
     except jsonschema.ValidationError as e:
@@ -84,7 +97,7 @@ def validate_run_create(
     return run_create
 
 
-def validate_resume_run(run_id: str, body: Dict[str, Any]):
+def validate_resume_run(run_id: str, body: Any):
     run = DB.get_run(run_id)
     check_run_is_interrupted(run)
 

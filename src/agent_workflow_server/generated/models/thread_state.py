@@ -37,7 +37,7 @@ class ThreadState(BaseModel):
     ThreadState
     """ # noqa: E501
     checkpoint: ThreadCheckpoint = Field(description="The identifier for this checkpoint.")
-    values: Dict[str, Any] = Field(description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
+    values: Optional[Any] = Field(description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
     messages: Optional[List[Message]] = Field(default=None, description="The current messages of the thread. If messages are contained in Thread.values, implementations should remove them from values when returning messages. When this key isn't present it means the thread/agent doesn't support messages.")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="The checkpoint metadata.")
     __properties: ClassVar[List[str]] = ["checkpoint", "values", "messages", "metadata"]
@@ -89,6 +89,11 @@ class ThreadState(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['messages'] = _items
+        # set to None if values (nullable) is None
+        # and model_fields_set contains the field
+        if self.values is None and "values" in self.model_fields_set:
+            _dict['values'] = None
+
         return _dict
 
     @classmethod

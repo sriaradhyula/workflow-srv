@@ -36,7 +36,7 @@ class RunResult(BaseModel):
     Final result of a Run.
     """ # noqa: E501
     type: StrictStr
-    values: Optional[Dict[str, Any]] = Field(default=None, description="The output of the agent. The schema is described in agent ACP descriptor under 'spec.output'.")
+    values: Optional[Any] = Field(default=None, description="The output of the agent. The schema is described in agent ACP descriptor under 'spec.output'.")
     messages: Optional[List[Message]] = Field(default=None, description="The messages returned by the run.")
     __properties: ClassVar[List[str]] = ["type", "values", "messages"]
 
@@ -91,6 +91,11 @@ class RunResult(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['messages'] = _items
+        # set to None if values (nullable) is None
+        # and model_fields_set contains the field
+        if self.values is None and "values" in self.model_fields_set:
+            _dict['values'] = None
+
         return _dict
 
     @classmethod

@@ -38,7 +38,7 @@ class ThreadPatch(BaseModel):
     """ # noqa: E501
     checkpoint: Optional[ThreadCheckpoint] = Field(default=None, description="The identifier of the checkpoint to branch from. Ignored for metadata-only patches. If not provided, defaults to the latest checkpoint.")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Metadata to merge with existing thread metadata.")
-    values: Optional[Dict[str, Any]] = Field(default=None, description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
+    values: Optional[Any] = Field(default=None, description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
     messages: Optional[List[Message]] = Field(default=None, description="The current Messages of the thread. If messages are contained in Thread.values, implementations should remove them from values when returning messages. When this key isn't present it means the thread/agent doesn't support messages.")
     __properties: ClassVar[List[str]] = ["checkpoint", "metadata", "values", "messages"]
 
@@ -89,6 +89,11 @@ class ThreadPatch(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['messages'] = _items
+        # set to None if values (nullable) is None
+        # and model_fields_set contains the field
+        if self.values is None and "values" in self.model_fields_set:
+            _dict['values'] = None
+
         return _dict
 
     @classmethod
