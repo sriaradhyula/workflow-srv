@@ -38,7 +38,7 @@ class RunCreateStateful(BaseModel):
     Payload for creating a stateful run.
     """ # noqa: E501
     agent_id: Optional[StrictStr] = Field(default=None, description="The agent ID to run. If not provided will use the default agent for this service.")
-    input: Optional[Dict[str, Any]] = Field(default=None, description="The input to the agent. The schema is described in agent ACP descriptor under 'spec.thread_state'.'input'.")
+    input: Optional[Any] = Field(default=None, description="The input of the agent. The schema is described in agent ACP descriptor under 'spec.input'.")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Metadata to assign to the run.")
     config: Optional[Config] = None
     webhook: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=65536)]] = Field(default=None, description="Webhook to call upon change of run status. This is a url that accepts a POST containing the `Run` object as body. See Callbacks definition.")
@@ -123,6 +123,11 @@ class RunCreateStateful(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of stream_mode
         if self.stream_mode:
             _dict['stream_mode'] = self.stream_mode.to_dict()
+        # set to None if input (nullable) is None
+        # and model_fields_set contains the field
+        if self.input is None and "input" in self.model_fields_set:
+            _dict['input'] = None
+
         # set to None if stream_mode (nullable) is None
         # and model_fields_set contains the field
         if self.stream_mode is None and "stream_mode" in self.model_fields_set:

@@ -103,6 +103,10 @@ def mock_agent(mocker: MockerFixture):
         ]
     )
 
+    mock_agent.update_agent_state = mocker.AsyncMock(
+        return_value={"values": {"key": "updated_value"}}
+    )
+
     # Mock AGENTS dictionary
     mock_agents = {"mock_agent": mocker.Mock(agent=mock_agent)}
     mocker.patch("agent_workflow_server.services.threads.AGENTS", mock_agents)
@@ -159,7 +163,7 @@ async def test_create_thread():
 
 
 @pytest.mark.asyncio
-async def test_copy_thread(mock_thread):
+async def test_copy_thread(mock_thread, mock_agent):
     # Test copying an existing thread
     copied_thread = await Threads.copy_thread(mock_thread["thread_id"])
     assert copied_thread is not None
@@ -167,9 +171,16 @@ async def test_copy_thread(mock_thread):
     assert copied_thread.metadata == mock_thread["metadata"]
     assert copied_thread.status == mock_thread["status"]
 
+    # Verify agent state is retrieved for the new thread
+    mock_agent.get_agent_state.assert_called_once_with(mock_thread["thread_id"])
+
     # Test copying non-existent thread
+    mock_agent.get_agent_state.reset_mock()  # Reset call history
     copied_thread = await Threads.copy_thread("nonexistent_id")
     assert copied_thread is None
+
+    # The agent's get_agent_state shouldn't be called for nonexistent thread
+    mock_agent.get_agent_state.assert_not_called()
 
 
 @pytest.mark.asyncio

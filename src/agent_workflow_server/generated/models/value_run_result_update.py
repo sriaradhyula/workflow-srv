@@ -39,7 +39,7 @@ class ValueRunResultUpdate(BaseModel):
     type: StrictStr
     run_id: StrictStr = Field(description="The ID of the run.")
     status: RunStatus = Field(description="Status of the Run when this result was generated. This is particularly useful when this data structure is used for streaming results. As the server can indicate an interrupt or an error condition while streaming the result.")
-    values: Dict[str, Any] = Field(description="The output of the agent. The schema is described in agent ACP descriptor under 'spec.output'.")
+    values: Optional[Any] = Field(description="The output of the agent. The schema is described in agent ACP descriptor under 'spec.output'.")
     messages: Optional[List[Message]] = Field(default=None, description="Stream of messages returned by the run.")
     __properties: ClassVar[List[str]] = ["type", "run_id", "status", "values", "messages"]
 
@@ -94,6 +94,11 @@ class ValueRunResultUpdate(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['messages'] = _items
+        # set to None if values (nullable) is None
+        # and model_fields_set contains the field
+        if self.values is None and "values" in self.model_fields_set:
+            _dict['values'] = None
+
         return _dict
 
     @classmethod

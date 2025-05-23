@@ -41,7 +41,7 @@ class Thread(BaseModel):
     updated_at: datetime = Field(description="The last time the thread was updated.")
     metadata: Dict[str, Any] = Field(description="Free form metadata for this thread")
     status: StrictStr = Field(description="The status of the thread.")
-    values: Optional[Dict[str, Any]] = Field(default=None, description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
+    values: Optional[Any] = Field(default=None, description="The thread state. The schema is described in agent ACP descriptor under 'spec.thread_state'.")
     messages: Optional[List[Message]] = Field(default=None, description="The current Messages of the thread. If messages are contained in Thread.values, implementations should remove them from values when returning messages. When this key isn't present it means the thread/agent doesn't support messages.")
     __properties: ClassVar[List[str]] = ["thread_id", "created_at", "updated_at", "metadata", "status", "values", "messages"]
 
@@ -96,6 +96,11 @@ class Thread(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['messages'] = _items
+        # set to None if values (nullable) is None
+        # and model_fields_set contains the field
+        if self.values is None and "values" in self.model_fields_set:
+            _dict['values'] = None
+
         return _dict
 
     @classmethod

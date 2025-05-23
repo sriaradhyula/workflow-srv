@@ -36,7 +36,7 @@ class Config(BaseModel):
     """ # noqa: E501
     tags: Optional[List[StrictStr]] = None
     recursion_limit: Optional[StrictInt] = None
-    configurable: Optional[Dict[str, Any]] = Field(default=None, description="The configuration for this agent. The schema is described in agent ACP descriptor under 'spec.config'. If missing, default values are used.")
+    configurable: Optional[Any] = Field(default=None, description="The configuration for this agent. The schema is described in agent ACP descriptor under 'spec.config'. If missing, default values are used.")
     __properties: ClassVar[List[str]] = ["tags", "recursion_limit", "configurable"]
 
     model_config = {
@@ -76,6 +76,11 @@ class Config(BaseModel):
             },
             exclude_none=True,
         )
+        # set to None if configurable (nullable) is None
+        # and model_fields_set contains the field
+        if self.configurable is None and "configurable" in self.model_fields_set:
+            _dict['configurable'] = None
+
         return _dict
 
     @classmethod
