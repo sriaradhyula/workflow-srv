@@ -37,7 +37,6 @@ validate-spec:
 
 # Update spec (latest commit from submodule)
 update-spec:
-	git submodule update --init --recursive
 	git submodule update --remote
 
 # Generate api (models and routes template) and manifest
