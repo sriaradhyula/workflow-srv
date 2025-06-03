@@ -1,7 +1,7 @@
 [project]
 name = "agent-workflow-server"
-version = "0.2.10"
-description = ""
+version = "0.3.0"
+description = "Run your agents and expose them through ACP"
 authors = [
     {name = "Janos Sarusi-Kis", email = "janossk@cisco.com"},
     {name = "Marco Trinelli ", email = "mtrinell@cisco.com"}
