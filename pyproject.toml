@@ -8,12 +8,12 @@ authors = [
 ]
 
 readme = "README.md"
-requires-python = ">=3.13,<4"
+requires-python = ">=3.12,<4"
 
 dependencies = [
     "fastapi (>=0.115.11,<0.116.0)",
     "uvicorn (>=0.34.0,<0.35.0)",
-    "langgraph (>=0.2.60,<0.4.0)",
+    "langgraph (>=0.2.60)",
     "llama-index (>=0.12.30,<0.13.0)",
     "dotenv (>=0.9.9,<0.10.0)",
     "jsonschema (>=4.23.0,<5.0.0)",
